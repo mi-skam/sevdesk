@@ -586,13 +586,14 @@ Create a regular **draft** invoice from a JSON file, including multiple position
 Never sends, books, or finalizes the invoice. Calls the SDK's `invoices.save` method.
 
 ```bash
-sevdesk invoices:create --file invoice.json --dry-run --json
-sevdesk invoices:create --file invoice.json --yes --json
+sevdesk invoices:create invoice.json --dry-run --json
+sevdesk invoices:create invoice.json --yes --json
 ```
+
+**Argument:** `invoice.json` (required JSON input path, containing the invoice and positions).
 
 **Options:**
 
-- `--file`: Required JSON input path.
 - `--dry-run`: Validate and print the normalized payload without authentication or API calls.
 - `--yes`: Confirm draft creation; required in non-interactive mode unless using `--dry-run`.
 - `--json`: Print the SDK result (`invoice` and `positions`) as JSON.

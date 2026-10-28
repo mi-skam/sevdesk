@@ -81,15 +81,10 @@ export const invoiceCreateSchema = z
 
 export default defineCommand({
   description:
-    'Create a regular draft invoice from a validated JSON file. Never sends or finalizes it.',
+    'Create a regular draft invoice from invoice.json. Never sends or finalizes it.',
+  args: z.tuple([z.string().min(1).describe('invoice.json')]),
   options: defineOptions(
     z.object({
-      file: z
-        .string()
-        .min(1)
-        .describe(
-          'JSON file containing invoice and positions. Dates use YYYY-MM-DD.',
-        ),
       dryRun: z
         .boolean()
         .default(false)
@@ -103,9 +98,9 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [file]) => {
     const input = invoiceCreateSchema.parse(
-      JSON.parse(await readFile(options.file, 'utf8')),
+      JSON.parse(await readFile(file, 'utf8')),
     );
     const payload = {
       ...input,

@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { processConfig } from 'zodline';
 import command, { invoiceCreateSchema } from '../src/commands/invoices/create';
 import { isInteractive } from '../src/interactive';
 import { promptConfirm } from '../src/prompt';
@@ -84,10 +85,50 @@ describe('invoices:create', () => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
-  const options = () => ({ file, yes: true, json: true, dryRun: false });
+  const options = () => ({ yes: true, json: true, dryRun: false });
 
+  it('parses invoice.json as a required positional argument and previews it without network access', async () => {
+    const parsed = processConfig({ commands: { 'invoices:create': command } }, [
+      'invoices:create',
+      file,
+      '--dry-run',
+      '--json',
+    ]);
+    expect(parsed.args).toEqual([file]);
+    expect(parsed.options).not.toHaveProperty('file');
+    await parsed.command.action(parsed.options, parsed.args);
+    expect(JSON.parse(vi.mocked(console.log).mock.calls[0]?.[0]).dryRun).toBe(
+      true,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['invoices:create'],
+    ['invoices:create', '--file', 'invoice.json'],
+    ['invoices:create', 'invoice.json', 'extra.json'],
+  ])(
+    'rejects missing, legacy, or extra input arguments before any network access: %j',
+    (...args) => {
+      expect(() =>
+        processConfig({ commands: { 'invoices:create': command } }, args),
+      ).toThrow();
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+  it('supports a positional file path containing spaces', async () => {
+    const path = join(directory, 'invoice with spaces.json');
+    await writeFile(path, JSON.stringify(fixture()));
+    const parsed = processConfig({ commands: { 'invoices:create': command } }, [
+      'invoices:create',
+      path,
+      '--dry-run',
+      '--json',
+    ]);
+    await parsed.command.action(parsed.options, parsed.args);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
   it('creates exactly one draft with ordered positions and prints JSON', async () => {
-    await command.action(options(), undefined);
+    await command.action(options(), [file]);
     const posts = fetchMock.mock.calls.filter(
       ([, init]) => init?.method === 'POST',
     );
@@ -139,7 +180,7 @@ describe('invoices:create', () => {
       }
       return original(input, init);
     });
-    await command.action(options(), undefined);
+    await command.action(options(), [file]);
     const post = fetchMock.mock.calls.find(
       ([, init]) => init?.method === 'POST',
     )!;
@@ -160,7 +201,7 @@ describe('invoices:create', () => {
         },
       }),
     );
-    await command.action(options(), undefined);
+    await command.action(options(), [file]);
     expect(
       fetchMock.mock.calls.some(([url]) => String(url).includes('/getByType')),
     ).toBe(false);
@@ -188,7 +229,7 @@ describe('invoices:create', () => {
         );
       return original(input, init);
     });
-    await expect(command.action(options(), undefined)).rejects.toThrow(
+    await expect(command.action(options(), [file])).rejects.toThrow(
       'bereits vergeben',
     );
     expect(
@@ -196,7 +237,7 @@ describe('invoices:create', () => {
     ).toBe(false);
   });
   it('exposes pending numbering in offline preview', async () => {
-    await command.action({ ...options(), dryRun: true }, undefined);
+    await command.action({ ...options(), dryRun: true }, [file]);
     expect(
       JSON.parse(vi.mocked(console.log).mock.calls[0]?.[0]).numbering,
     ).toEqual({ mode: 'automatic', pending: true, reserved: false });
@@ -211,13 +252,13 @@ describe('invoices:create', () => {
     ).toBeUndefined();
   });
   it('prints a human-readable success message', async () => {
-    await command.action({ ...options(), json: false }, undefined);
+    await command.action({ ...options(), json: false }, [file]);
     expect(consola.success).toHaveBeenCalledWith(
       expect.stringContaining('Not sent or finalized'),
     );
   });
   it('dry-run validates without any network calls', async () => {
-    await command.action({ ...options(), dryRun: true, yes: false }, undefined);
+    await command.action({ ...options(), dryRun: true, yes: false }, [file]);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(JSON.parse(vi.mocked(console.log).mock.calls[0]?.[0]).dryRun).toBe(
       true,
@@ -228,27 +269,24 @@ describe('invoices:create', () => {
       throw new Error('exit');
     });
     await expect(
-      command.action({ ...options(), yes: false }, undefined),
+      command.action({ ...options(), yes: false }, [file]),
     ).rejects.toThrow('exit');
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('honors declined confirmation', async () => {
     vi.mocked(isInteractive).mockReturnValue(true);
     vi.mocked(promptConfirm).mockResolvedValue(false);
-    await command.action({ ...options(), yes: false }, undefined);
+    await command.action({ ...options(), yes: false }, [file]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('rejects malformed JSON before network access', async () => {
     await writeFile(file, '{');
-    await expect(command.action(options(), undefined)).rejects.toThrow();
+    await expect(command.action(options(), [file])).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('reports a missing input file without network access', async () => {
     await expect(
-      command.action(
-        { ...options(), file: join(directory, 'missing') },
-        undefined,
-      ),
+      command.action(options(), [join(directory, 'missing')]),
     ).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -266,7 +304,7 @@ describe('invoices:create', () => {
     { positions: [{ ...fixture().positions[0], price: '100' }] },
   ])('rejects unsafe or incomplete payload %j', async (override) => {
     await writeFile(file, JSON.stringify({ ...fixture(), ...override }));
-    await expect(command.action(options(), undefined)).rejects.toThrow();
+    await expect(command.action(options(), [file])).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
   it('defaults only status and regular invoice type', () => {
@@ -281,7 +319,7 @@ describe('invoices:create', () => {
       if (init?.method === 'POST') throw new Error('network failed');
       return original(input, init);
     });
-    await expect(command.action(options(), undefined)).rejects.toThrow(
+    await expect(command.action(options(), [file])).rejects.toThrow(
       'network failed',
     );
     expect(
