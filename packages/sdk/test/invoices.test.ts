@@ -19,6 +19,12 @@ function parsedBody(
 }
 
 describe('InvoicesResource.list', () => {
+  it('can explicitly include all types when checking occupied invoice numbers', async () => {
+    const fetch = createMockFetch({ objects: [] });
+    await createResource(fetch).list({ showAll: true });
+    expect(lastRequest(fetch).url).toBe(`${BASE_URL}/Invoice?showAll=1`);
+    expect(lastRequest(fetch).init.method).toBe('GET');
+  });
   it('requests invoices without filters', async () => {
     const fetch = createMockFetch({ objects: [] });
 

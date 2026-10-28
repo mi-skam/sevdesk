@@ -13,6 +13,10 @@ export default defineCommand({
         .number()
         .optional()
         .describe('ID of the invoice. If omitted, you will be prompted.'),
+      positions: z
+        .boolean()
+        .optional()
+        .describe('Include all line items in the output.'),
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
@@ -27,8 +31,11 @@ export default defineCommand({
       invoiceId,
       embed: ['contact'],
     });
+    const positions = options.positions
+      ? await client.invoices.getPositions({ invoiceId })
+      : undefined;
     if (options.json) {
-      printJson(invoice);
+      printJson(positions ? { invoice, positions } : invoice);
       return;
     }
     consola.info(`ID: ${invoice.id}`);
@@ -40,5 +47,6 @@ export default defineCommand({
     consola.info(`Tax: ${invoice.sumTax}`);
     consola.info(`Gross: ${invoice.sumGross}`);
     consola.info(`Currency: ${invoice.currency}`);
+    if (positions) printJson(positions);
   },
 });

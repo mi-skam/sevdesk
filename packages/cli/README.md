@@ -109,9 +109,11 @@ sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 - [`export:transactions`](#exporttransactions)
 - [`export:vouchers`](#exportvouchers)
 - [`guidance:accounts`](#guidanceaccounts)
+- [`invoices:create`](#invoicescreate)
 - [`invoices:get`](#invoicesget)
 - [`invoices:list`](#invoiceslist)
 - [`invoices:pdf`](#invoicespdf)
+- [`numbering:get`](#numberingget)
 - [`orders:get`](#ordersget)
 - [`orders:list`](#orderslist)
 - [`orders:pdf`](#orderspdf)
@@ -578,6 +580,78 @@ sevdesk guidance:accounts [options]
 - `--expense`: Only show accounts that can be used for expenses. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `invoices:create`
+
+Create a regular **draft** invoice from a JSON file, including multiple positions.
+Never sends, books, or finalizes the invoice. Calls the SDK's `invoices.save` method.
+
+```bash
+sevdesk invoices:create --file invoice.json --dry-run --json
+sevdesk invoices:create --file invoice.json --yes --json
+```
+
+**Options:**
+
+- `--file`: Required JSON input path.
+- `--dry-run`: Validate and print the normalized payload without authentication or API calls.
+- `--yes`: Confirm draft creation; required in non-interactive mode unless using `--dry-run`.
+- `--json`: Print the SDK result (`invoice` and `positions`) as JSON.
+
+Example `invoice.json` (invented IDs; resolve real contact, SevUser, tax rule, and unit IDs first):
+
+```json
+{
+  "invoice": {
+    "contactId": 7,
+    "contactPersonId": 8,
+    "invoiceDate": "2024-02-29",
+    "deliveryDate": "2024-02-01",
+    "deliveryDateUntil": "2024-02-28",
+    "currency": "EUR",
+    "taxRuleId": 1,
+    "taxText": "Umsatzsteuer 19%",
+    "showNet": true,
+    "timeToPay": 14
+  },
+  "positions": [
+    {
+      "name": "Example consulting",
+      "quantity": 2,
+      "price": 100,
+      "taxRate": 19,
+      "unityId": 1
+    }
+  ]
+}
+```
+
+Dates must be valid `YYYY-MM-DD` calendar dates. The service date and optional
+period end cannot exceed the invoice date. `showNet` explicitly selects net
+(`true`) or gross (`false`) unit prices. VAT treatment is required, not inferred.
+At least one position is required. Positions are numbered automatically from zero;
+the recipient's default address is used. Validate the contact's address before creating.
+
+`invoiceNumber` may be omitted or blank: the CLI reads the configured numbering
+format (Nummernformat) and all existing invoice numbers, including drafts, then
+uses the highest matching numeric value + 1, respecting a higher configured
+starting counter. It supplies that number explicitly to sevdesk and defaults an
+omitted subject (Betreff) to `Rechnung Nr. <number>`. Explicit numbers and subjects
+are preserved. A final duplicate check fails without posting if the number became
+occupied; it does not silently renumber. The check is not an atomic reservation.
+Only literal formats containing exactly one `%NUMBER` are supported automatically;
+other formats require an explicit number. Offline `--dry-run` reports pending
+number resolution without making account requests.
+
+The invoice optionally accepts `header`, `headText`, `footText`,
+`customerInternalNote`, `smallSettlement`, and `paymentMethodId`. Positions optionally accept `text`
+and percentage `discount`. Unknown fields are rejected, including existing invoice IDs.
+Only status `100` and type `RE` are allowed (both defaulted); special invoice types
+and editing existing invoices are intentionally not supported.
+
+Local validation does not establish tax correctness or validate IDs against the
+account. After creating, inspect the returned ID with `invoices:get`. A timed-out
+creation may have succeeded: check for duplicates before retrying.
+
 ### `invoices:get`
 
 Show a single invoice.
@@ -589,6 +663,7 @@ sevdesk invoices:get [options]
 **Options:**
 
 - `--id`: ID of the invoice. If omitted, you will be prompted.
+- `--positions`: Include all line items. With `--json`, returns `{ invoice, positions }` instead of the invoice alone.
 - `--json`: Output in JSON format.
 
 ### `invoices:list`
@@ -624,6 +699,30 @@ sevdesk invoices:pdf [options]
 - `--output`: Path to write the PDF to. Defaults to the file name reported by the API.
 - `--prevent-send-by`: Do not mark the invoice as sent by download. Defaults to `false`.
 - `--json`: Output in JSON format.
+
+### `numbering:get`
+
+Read invoice or quote numbering configuration (Nummernkreis) without reserving
+or consuming a number. Uses `GET /SevSequence/Factory/getByType`, described in
+sevdesk's official API introduction under **The invoice number**.
+
+```bash
+sevdesk numbering:get --kind invoice
+sevdesk numbering:get --kind quote --json
+sevdesk numbering:get --kind quote --suggest --json
+```
+
+`--kind` defaults to `invoice` (Rechnung); `quote` means Angebot. Human output
+shows the format (Nummernformat) and configured counter (Eingestellter Zähler).
+JSON returns the sequence metadata. `--suggest` instead scans all existing numbers,
+including drafts, and returns `nextNumber`, `highestExistingNumber`,
+`configuredCounter`, `format`, `kind`, and `reserved: false`, using the same logic
+as creation. **The configured counter is not necessarily
+free:** existing drafts (Entwürfe) can already use it. For a simple `%NUMBER`
+format, inspect existing numbers, including drafts, numerically rather than
+lexicographically and choose at least the highest used number plus one while
+respecting a higher configured starting number. Recheck for duplicates before
+saving. This is not an atomic number reservation.
 
 ### `orders:get`
 

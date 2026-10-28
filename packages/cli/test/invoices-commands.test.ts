@@ -112,6 +112,23 @@ describe('invoice commands', () => {
   });
 
   describe('get', () => {
+    it('includes all positions only when requested', async () => {
+      const positions = [{ id: '9', name: 'Example support', quantity: '2' }];
+      const fetchMock = stubFetch(
+        { objects: [invoice] },
+        { objects: positions },
+      );
+      await getCommand.action(
+        { id: 42, positions: true, json: true },
+        undefined,
+      );
+      expect(requestAt(fetchMock, 1).url).toContain('/Invoice/42/getPositions');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(vi.mocked(console.log).mock.calls[0]?.[0])).toEqual({
+        invoice,
+        positions,
+      });
+    });
     it('prints the invoice as JSON', async () => {
       const fetchMock = stubFetch({ objects: [invoice] });
       await getCommand.action({ id: 42, json: true }, undefined);
