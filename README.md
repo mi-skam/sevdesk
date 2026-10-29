@@ -18,7 +18,7 @@ Unofficial Node.js SDK and CLI for the [sevdesk](https://sevdesk.de/) API.[^1]
 
 This is an independent fork of [genz-its/sevdesk](https://github.com/genz-its/sevdesk). The npm badges and package names above refer to the upstream packages; this fork has not published an npm release. Installing those packages from the registry does **not** install the fork's changes.
 
-The changes are organized in two stacked pull requests: [invoice creation, numbering, and positional CLI inputs](https://github.com/mi-skam/sevdesk/pull/1), followed by [complete quote workflows](https://github.com/mi-skam/sevdesk/pull/2).
+Development history: [invoice creation, numbering, and positional CLI inputs](https://github.com/mi-skam/sevdesk/pull/1), followed by [complete quote workflows](https://github.com/mi-skam/sevdesk/pull/2). This README describes the fork's source checkout, not the published upstream npm releases.
 
 ## Features
 
@@ -36,10 +36,10 @@ Node.js 22 or later and a sevdesk account on bookkeeping system version 2.0 are 
 
 ### Run this fork from source
 
-Until the pull requests merge, use the complete feature branch:
+Build the fork locally to use the workflows described here:
 
 ```bash
-git clone --branch feat/quote-workflows https://github.com/mi-skam/sevdesk.git
+git clone https://github.com/mi-skam/sevdesk.git
 cd sevdesk
 npm ci
 npm run build
