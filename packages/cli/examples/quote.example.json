@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "customer": { "number": "C-EXAMPLE" },
+  "document": {
+    "number": "AN-EXAMPLE",
+    "date": "2024-02-29",
+    "validUntil": "2024-03-31",
+    "heading": "IT infrastructure review",
+    "currency": "EUR",
+    "priceMode": "net",
+    "contactPersonId": 8
+  },
+  "tax": { "ruleId": 1, "text": "Umsatzsteuer 19%" },
+  "positions": [
+    {
+      "name": "Example consulting",
+      "description": "Assessment and recommendations",
+      "quantity": "8",
+      "unit": { "id": 1, "label": "hours" },
+      "unitPrice": "100.00",
+      "vatRate": "19"
+    }
+  ],
+  "texts": {
+    "introduction": "Thank you for your enquiry.",
+    "closing": "Please contact us with any questions."
+  },
+  "terms": {
+    "payment": "Payment within 14 days of invoicing.",
+    "delivery": "By arrangement."
+  },
+  "delivery": {
+    "to": "customer@example.com",
+    "subject": "Angebot {{number}}",
+    "message": "Guten Tag,\n\nanbei erhalten Sie unser Angebot {{number}}.",
+    "copyToSelf": false
+  }
+}
