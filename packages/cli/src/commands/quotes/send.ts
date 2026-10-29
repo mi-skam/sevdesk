@@ -1,6 +1,7 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { printJson } from '../../output';
 import { deliverySchema } from '../../quotes/model';
@@ -10,17 +11,13 @@ export default defineCommand({
   description:
     'Send an existing quote draft (Angebotsentwurf versenden). Never creates another quote.',
   args: z.tuple([
+    idArgument.describe('Existing quote ID (Angebots-ID).'),
     z
       .string()
       .describe('quote.json containing delivery details (Versandangaben).'),
   ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .int()
-        .positive()
-        .describe('Existing quote ID (Angebots-ID).'),
       dryRun: z
         .boolean()
         .default(false)
@@ -32,12 +29,12 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Machine-readable output.'),
     }),
   ),
-  action: async (o, [file]) => {
+  action: async (o, [id, file]) => {
     const delivery = deliverySchema.parse((await loadQuote(file)).delivery);
     if (o.dryRun) {
       const result = {
         dryRun: true,
-        orderId: o.id,
+        orderId: id,
         delivery,
         attachment: 'Quote PDF (Angebots-PDF)',
         accountValidated: false,
@@ -48,7 +45,7 @@ export default defineCommand({
     }
     const result = await sendQuote(
       await requireClient(),
-      o.id,
+      id,
       delivery,
       o.receipt,
     );

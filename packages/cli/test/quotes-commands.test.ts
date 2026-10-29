@@ -129,6 +129,59 @@ describe('quote command signatures', () => {
       processConfig(config, ['create', file, file, '--dry-run']),
     ).toThrow();
   });
+  it.each(['get', 'pdf', 'send'] as const)(
+    '%s requires the quote ID first and rejects removed --id syntax',
+    (name) => {
+      const selected = { get, pdf, send }[name];
+      const parse = (args: string[]) =>
+        processConfig({ commands: { [name]: selected } }, [name, ...args]);
+      const tail = name === 'send' ? [file] : [];
+      const flags = name === 'pdf' ? ['--output', join(dir, 'q.pdf')] : [];
+      const parsed = parse(['42', ...tail, ...flags, '--json']);
+      expect(parsed.args).toEqual(name === 'send' ? [42, file] : [42]);
+      expect(parsed.options).not.toHaveProperty('id');
+      for (const args of [
+        [...tail, '--id', '42', ...flags],
+        ['42', ...tail, '--id=42', ...flags],
+        [...tail, ...flags],
+        ['0', ...tail, ...flags],
+        ['NaN', ...tail, ...flags],
+        ['42', ...tail, 'extra', ...flags],
+      ])
+        expect(() => parse(args)).toThrow();
+      expect(requireClient).not.toHaveBeenCalled();
+      expect(mock.orders.sendViaEmail).not.toHaveBeenCalled();
+    },
+  );
+  it('routes positional send input through parsing and previews without authentication', async () => {
+    const parsed = processConfig({ commands: { send } }, [
+      'send',
+      '42',
+      file,
+      '--dry-run',
+      '--json',
+    ]);
+    await parsed.command.action(parsed.options, parsed.args);
+    expect(output()).toMatchObject({ dryRun: true, orderId: 42 });
+    expect(requireClient).not.toHaveBeenCalled();
+    expect(mock.orders.sendViaEmail).not.toHaveBeenCalled();
+  });
+  it('routes positional send input to the existing quote without creating another', async () => {
+    const parsed = processConfig({ commands: { send } }, [
+      'send',
+      '42',
+      file,
+      '--receipt',
+      join(dir, 'parsed-send.json'),
+      '--json',
+    ]);
+    await parsed.command.action(parsed.options, parsed.args);
+    expect(output().state).toBe('sent');
+    expect(mock.orders.save).not.toHaveBeenCalled();
+    expect(mock.orders.sendViaEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: 42 }),
+    );
+  });
   it('omitted positional file previews an empty quote offline', async () => {
     await create.action({ ...options(), dryRun: true }, []);
     expect(output()).toMatchObject({
@@ -321,13 +374,13 @@ describe('quote command signatures', () => {
     expect(mock.orders.save).toHaveBeenCalledTimes(1);
   });
   it('standalone send dry-run validates offline, then sending needs no confirmation flag', async () => {
-    const o = { id: 42, dryRun: true, json: true };
-    await send.action(o, [file]);
+    const o = { dryRun: true, json: true };
+    await send.action(o, [42, file]);
     expect(requireClient).not.toHaveBeenCalled();
     expect(output().dryRun).toBe(true);
     await send.action(
       { ...o, dryRun: false, receipt: join(dir, 'send-preview.json') },
-      [file],
+      [42, file],
     );
     expect(output().state).toBe('sent');
     expect(mock.orders.sendViaEmail).toHaveBeenCalledTimes(1);
@@ -335,12 +388,11 @@ describe('quote command signatures', () => {
   it('standalone send uses the saved quote ID without another save', async () => {
     await send.action(
       {
-        id: 42,
         dryRun: false,
         receipt: join(dir, 'send.json'),
         json: true,
       },
-      [file],
+      [42, file],
     );
     expect(mock.orders.save).not.toHaveBeenCalled();
     expect(mock.orders.sendViaEmail).toHaveBeenCalledWith(
@@ -358,10 +410,10 @@ describe('quote command signatures', () => {
   it('rejects non-quote IDs for quote get and PDF', async () => {
     mock.orders.get.mockResolvedValue({ ...order, orderType: 'AB' });
     await expect(
-      get.action({ id: 42, positions: false, json: true }, undefined),
+      get.action({ positions: false, json: true }, [42]),
     ).rejects.toThrow('not a quote');
     await expect(
-      pdf.action({ id: 42, output: join(dir, 'q.pdf'), json: true }, undefined),
+      pdf.action({ output: join(dir, 'q.pdf'), json: true }, [42]),
     ).rejects.toThrow('not a quote');
     expect(mock.orders.getPdf).not.toHaveBeenCalled();
   });
@@ -369,17 +421,17 @@ describe('quote command signatures', () => {
     mock.orders.listPositions
       .mockResolvedValueOnce([{ id: '99' }])
       .mockResolvedValueOnce([]);
-    await get.action({ id: 42, positions: true, json: true }, undefined);
+    await get.action({ positions: true, json: true }, [42]);
     expect(output()).toEqual({ quote: order, positions: [{ id: '99' }] });
   });
   it('PDF preview never marks sent and refuses overwrites', async () => {
-    const o = { id: 42, output: join(dir, 'q.pdf'), json: true };
-    await pdf.action(o, undefined);
+    const o = { output: join(dir, 'q.pdf'), json: true };
+    await pdf.action(o, [42]);
     expect(mock.orders.getPdf).toHaveBeenCalledWith({
       orderId: 42,
       preventSendBy: true,
     });
-    await expect(pdf.action(o, undefined)).rejects.toThrow();
+    await expect(pdf.action(o, [42])).rejects.toThrow();
     expect(mock.orders.sendViaEmail).not.toHaveBeenCalled();
   });
 });

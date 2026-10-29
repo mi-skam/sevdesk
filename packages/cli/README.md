@@ -878,10 +878,12 @@ creation. See the [complete workflow and JSON reference](docs/quotes.md) and
 Inspect an existing quote (Angebot), rejecting other sales document types.
 
 ```bash
-sevdesk quotes:get --id 42 --positions --json
+sevdesk quotes:get 42 --positions --json
 ```
 
-**Options:** `--id` (required), `--positions`, `--json`.
+**Argument:** `id` (required quote ID / Angebots-ID).
+
+**Options:** `--positions`, `--json`.
 With positions, JSON is `{ quote, positions }`; otherwise it is the quote.
 
 ### `quotes:list`
@@ -901,10 +903,12 @@ Status values: `100` draft, `200` delivered, `300` rejected/cancelled,
 Download a quote preview (Angebotsvorschau) without marking it sent.
 
 ```bash
-sevdesk quotes:pdf --id 42 --output /new/path/quote.pdf --json
+sevdesk quotes:pdf 42 --output /new/path/quote.pdf --json
 ```
 
-**Options:** `--id` (required), `--output` (required, must not exist), `--json`.
+**Argument:** `id` (required quote ID / Angebots-ID).
+
+**Options:** `--output` (required, must not exist), `--json`.
 Always uses `preventSendBy: true`; local PDF files are created with mode `0600`.
 
 ### `quotes:send`
@@ -912,14 +916,14 @@ Always uses `preventSendBy: true`; local PDF files are created with mode `0600`.
 Send an existing quote draft (Angebotsentwurf versenden), without recreating it.
 
 ```bash
-sevdesk quotes:send quote.json --id 42 --dry-run --json
-sevdesk quotes:send quote.json --id 42 --json
+sevdesk quotes:send 42 quote.json --dry-run --json
+sevdesk quotes:send 42 quote.json --json
 ```
 
-**Argument:** `quote.json` (required, uses its `delivery` section).
+**Arguments:** `id` (required existing quote ID / Angebots-ID), followed by
+`quote.json` (required, uses its `delivery` section).
 
-**Options:** `--id` (required),
-`--dry-run`, `--receipt`, `--json`.
+**Options:** `--dry-run`, `--receipt`, `--json`.
 
 The command itself requests sending and checks that the selected document is an unsent
 quote draft. After a failed or ambiguous send, inspect the sending status

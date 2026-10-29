@@ -1,6 +1,7 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { printJson } from '../../output';
 import { fetchAll } from '../../pagination';
@@ -8,13 +9,9 @@ import { fetchAll } from '../../pagination';
 export default defineCommand({
   description:
     'Inspect a quote (Angebot prüfen), optionally including its positions (Positionen).',
+  args: z.tuple([idArgument.describe('Quote ID (Angebots-ID).')]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .int()
-        .positive()
-        .describe('Quote ID (Angebots-ID).'),
       positions: z
         .boolean()
         .default(false)
@@ -22,10 +19,10 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Machine-readable output.'),
     }),
   ),
-  action: async (o) => {
+  action: async (o, [id]) => {
     const client = await requireClient();
     const quote = await client.orders.get({
-      orderId: o.id,
+      orderId: id,
       embed: ['contact'],
     });
     if (quote.orderType !== 'AN')
@@ -34,7 +31,7 @@ export default defineCommand({
       ? {
           quote,
           positions: await fetchAll((page) =>
-            client.orders.listPositions({ orderId: o.id, ...page }),
+            client.orders.listPositions({ orderId: id, ...page }),
           ),
         }
       : quote;

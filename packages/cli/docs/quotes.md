@@ -283,7 +283,7 @@ Unlike the receipt, **this recovery file includes the quote, addresses and email
 content**; keep it private. Its path is printed even for an unknown outcome.
 It preserves interactive work if saving or sending fails. Inspect the receipt
 and remote state first: a recovery file is not permission to recreate a quote
-whose creation may already have succeeded. Use it with `quotes:send --id …` for a
+whose creation may already have succeeded. Use it with `quotes:send <id> <recovery-file>.quote.json` for a
 verified unsent existing draft. Successful creation returns `saved`; acknowledged sending returns
 `sent`. A send acknowledgement is **not proof of inbox delivery**.
 
@@ -297,10 +297,12 @@ verified unsent existing draft. Successful creation returns `saved`; acknowledge
 After checking a failed send, send **the existing draft**, without recreating it:
 
 ```bash
-sevdesk quotes:get --id 42 --positions --json
-sevdesk quotes:send quote.json --id 42 --dry-run --json
-sevdesk quotes:send quote.json --id 42 --json
+sevdesk quotes:get 42 --positions --json
+sevdesk quotes:send 42 quote.json --dry-run --json
+sevdesk quotes:send 42 quote.json --json
 ```
+
+The quote ID (Angebots-ID) is the first positional argument; the delivery JSON file is second. Put positional inputs before options. The old target `--id` flag is not accepted.
 
 `quotes:send` refuses non-quotes, non-drafts and records already carrying a send
 date. There is deliberately no forced resend flag.
@@ -310,8 +312,8 @@ date. There is deliberately no forced resend flag.
 ```bash
 sevdesk quotes:list --json
 sevdesk quotes:list --contact 7 --status 100 --limit 20 --json
-sevdesk quotes:get --id 42 --positions --json
-sevdesk quotes:pdf --id 42 --output /new/path/quote.pdf --json
+sevdesk quotes:get 42 --positions --json
+sevdesk quotes:pdf 42 --output /new/path/quote.pdf --json
 ```
 
 Listing filters `AN` records client-side while paginating. PDF preview always
