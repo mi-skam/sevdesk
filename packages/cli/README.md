@@ -133,6 +133,11 @@ sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 - [`orders:pdf`](#orderspdf)
 - [`parts:get`](#partsget)
 - [`parts:list`](#partslist)
+- [`quotes:create`](#quotescreate)
+- [`quotes:get`](#quotesget)
+- [`quotes:list`](#quoteslist)
+- [`quotes:pdf`](#quotespdf)
+- [`quotes:send`](#quotessend)
 - [`tags:create`](#tagscreate)
 - [`tags:delete`](#tagsdelete)
 - [`tags:list`](#tagslist)
@@ -832,6 +837,98 @@ sevdesk parts:list [options]
 - `--limit`: Maximum number of parts to return. Defaults to all of them.
 - `--offset`: Number of parts to skip.
 - `--json`: Output in JSON format.
+
+### `quotes:create`
+
+Create/edit quote drafts (Angebotsentwürfe) interactively or from `quote.json`,
+with optional explicit sending (Versenden).
+
+```bash
+sevdesk quotes:create
+sevdesk quotes:create quote.json --interactive
+sevdesk quotes:create quote.json --dry-run --json
+sevdesk quotes:create quote.json --check --json
+sevdesk quotes:create quote.json --json
+sevdesk quotes:create quote.json --send --json
+```
+
+**Argument:** `[quote.json]` (optional; omitted starts a customerless quote with local date and subject defaults).
+
+**Options:** `--interactive`, `--dry-run`, `--check`,
+`--send`, `--receipt`, `--json`.
+
+In a terminal, no file starts a new quote at customer selection (Kundenauswahl),
+with today's local date, an automatically suggested number, and subject (Betreff);
+a positional file opens the unified quote editor (Angebotseditor), focused on the
+first position (Position). Selectable rows show their current values: Enter edits,
+Enter accepts a valid field locally, Escape cancels the current input. Positions
+open directly into their fields; there is no separate review menu or Apply step
+for existing records. Missing requirements are marked on the affected rows.
+Saving in sevdesk and sending still require explicit final confirmation. Machine flags
+(`--dry-run`, `--check`, `--send`, `--json`) select structured mode instead.
+`--dry-run` is fully offline; `--check` makes read-only customer/address/number
+checks. Neither writes. Structured creation saves directly; sending additionally requires `--send` and
+valid delivery fields. Incomplete drafts can be edited and
+exported locally. Existing quote numbers and receipt paths are refused before
+creation. See the [complete workflow and JSON reference](docs/quotes.md) and
+[invented example](examples/quote.example.json).
+
+### `quotes:get`
+
+Inspect an existing quote (Angebot), rejecting other sales document types.
+
+```bash
+sevdesk quotes:get 42 --positions --json
+```
+
+**Argument:** `id` (required quote ID / Angebots-ID).
+
+**Options:** `--positions`, `--json`.
+With positions, JSON is `{ quote, positions }`; otherwise it is the quote.
+
+### `quotes:list`
+
+List quotes (Angebote), filtering out other order types while paginating.
+
+```bash
+sevdesk quotes:list --contact 7 --status 100 --limit 20 --json
+```
+
+**Options:** `--contact`, `--status`, `--limit`, `--json`.
+Status values: `100` draft, `200` delivered, `300` rejected/cancelled,
+`500` accepted, `750` partially calculated, `1000` calculated.
+
+### `quotes:pdf`
+
+Download a quote preview (Angebotsvorschau) without marking it sent.
+
+```bash
+sevdesk quotes:pdf 42 --output /new/path/quote.pdf --json
+```
+
+**Argument:** `id` (required quote ID / Angebots-ID).
+
+**Options:** `--output` (required, must not exist), `--json`.
+Always uses `preventSendBy: true`; local PDF files are created with mode `0600`.
+
+### `quotes:send`
+
+Send an existing quote draft (Angebotsentwurf versenden), without recreating it.
+
+```bash
+sevdesk quotes:send 42 quote.json --dry-run --json
+sevdesk quotes:send 42 quote.json --json
+```
+
+**Arguments:** `id` (required existing quote ID / Angebots-ID), followed by
+`quote.json` (required, uses its `delivery` section).
+
+**Options:** `--dry-run`, `--receipt`, `--json`.
+
+The command itself requests sending and checks that the selected document is an unsent
+quote draft. After a failed or ambiguous send, inspect the sending status
+(Versandstatus) before retrying. Never rerun creation to retry sending. Operation
+results include saved IDs and a protected local receipt (Vorgangsprotokoll).
 
 ### `tags:create`
 

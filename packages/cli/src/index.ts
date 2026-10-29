@@ -40,6 +40,11 @@ import ordersList from './commands/orders/list';
 import ordersPdf from './commands/orders/pdf';
 import partsGet from './commands/parts/get';
 import partsList from './commands/parts/list';
+import quotesCreate from './commands/quotes/create';
+import quotesGet from './commands/quotes/get';
+import quotesList from './commands/quotes/list';
+import quotesPdf from './commands/quotes/pdf';
+import quotesSend from './commands/quotes/send';
 import tagsCreate from './commands/tags/create';
 import tagsDelete from './commands/tags/delete';
 import tagsList from './commands/tags/list';
@@ -106,6 +111,11 @@ const config = defineConfig({
     'orders:pdf': ordersPdf,
     'parts:get': partsGet,
     'parts:list': partsList,
+    'quotes:create': quotesCreate,
+    'quotes:get': quotesGet,
+    'quotes:list': quotesList,
+    'quotes:pdf': quotesPdf,
+    'quotes:send': quotesSend,
     'tags:create': tagsCreate,
     'tags:delete': tagsDelete,
     'tags:list': tagsList,
