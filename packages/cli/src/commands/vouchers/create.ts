@@ -9,14 +9,17 @@ import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Create a voucher from a receipt file.',
+  args: z.tuple([
+    z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        'Path to the receipt file to attach, for example a PDF, an image or an XML invoice.',
+      ),
+  ]),
   options: defineOptions(
     z.object({
-      file: z
-        .string()
-        .optional()
-        .describe(
-          'Path to the receipt file to attach, for example a PDF, an image or an XML invoice.',
-        ),
       status: z
         .enum(['draft', 'open'])
         .default('open')
@@ -87,7 +90,7 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [receiptPath]) => {
     if (
       options.deliveryDateUntil !== undefined &&
       options.deliveryDate === undefined
@@ -99,8 +102,8 @@ export default defineCommand({
     }
     const client = await requireClient();
     const path = await requireStringOption({
-      value: options.file,
-      requirement: 'a file via --file',
+      value: receiptPath,
+      requirement: 'a file as a positional argument',
       question: 'Enter the path to the receipt file:',
     });
     const taxRuleId = await requireNumberOption({

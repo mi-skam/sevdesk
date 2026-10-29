@@ -142,7 +142,7 @@ describe('contact commands', () => {
     );
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await get.action({ id: 42, json: true }, undefined);
+    await get.action({ json: true }, [42]);
 
     expect(requestAt(0).url.pathname).toBe('/api/v1/Contact/42');
     const addressRequest = requestAt(1);
@@ -170,7 +170,7 @@ describe('contact commands', () => {
     respondWithEach([contact], [address], [], [communicationWay]);
     const info = vi.spyOn(consola, 'info').mockImplementation(() => {});
 
-    await get.action({ id: 42, json: false }, undefined);
+    await get.action({ json: false }, [42]);
 
     const output = info.mock.calls.flat().join('\n');
     expect(output).toContain('Addresses:');
@@ -215,7 +215,6 @@ describe('contact commands', () => {
 
     await addAddress.action(
       {
-        contact: 42,
         street: 'South road 15',
         zip: '12345',
         city: 'The North',
@@ -223,7 +222,7 @@ describe('contact commands', () => {
         category: 47,
         json: false,
       },
-      undefined,
+      [42],
     );
 
     const { url, init } = lastRequest();
@@ -249,10 +248,10 @@ describe('contact commands', () => {
     }) as (code?: number) => never);
 
     await expect(
-      addAddress.action({ country: 1, category: 47, json: false }, undefined),
+      addAddress.action({ country: 1, category: 47, json: false }, []),
     ).rejects.toThrow('process.exit(1)');
     expect(error).toHaveBeenCalledWith(
-      'You must provide a contact ID via --contact when running in a non-interactive environment.',
+      'You must provide a contact ID as a positional argument when running in a non-interactive environment.',
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -263,13 +262,12 @@ describe('contact commands', () => {
 
     await addEmail.action(
       {
-        contact: 42,
         email: 'jane@example.com',
         key: 2,
         main: true,
         json: false,
       },
-      undefined,
+      [42],
     );
 
     const { url, init } = lastRequest();
@@ -296,13 +294,12 @@ describe('contact commands', () => {
     await expect(
       addEmail.action(
         {
-          contact: 42,
           email: 'jane.example.com',
           key: 2,
           main: false,
           json: false,
         },
-        undefined,
+        [42],
       ),
     ).rejects.toThrow('process.exit(1)');
     expect(error).toHaveBeenCalledWith(
@@ -317,13 +314,12 @@ describe('contact commands', () => {
 
     await addPhone.action(
       {
-        contact: 42,
         phone: '+49 30 123456',
         key: 2,
         main: false,
         json: false,
       },
-      undefined,
+      [42],
     );
 
     expect(JSON.parse(lastRequest().init.body as string)).toMatchObject({
@@ -338,7 +334,7 @@ describe('contact commands', () => {
     respondWith(contact);
     vi.spyOn(consola, 'success').mockImplementation(() => {});
 
-    await update.action({ id: 42, description: 'VIP', json: false }, undefined);
+    await update.action({ description: 'VIP', json: false }, [42]);
 
     const { url, init } = lastRequest();
     expect(init.method).toBe('PUT');
@@ -354,7 +350,7 @@ describe('contact commands', () => {
     respondWith(null);
     const success = vi.spyOn(consola, 'success').mockImplementation(() => {});
 
-    await remove.action({ id: 42, yes: true, json: false }, undefined);
+    await remove.action({ yes: true, json: false }, [42]);
 
     const { url, init } = lastRequest();
     expect(init.method).toBe('DELETE');
@@ -367,8 +363,8 @@ describe('contact commands', () => {
     const success = vi.spyOn(consola, 'success').mockImplementation(() => {});
 
     await updateAddress.action(
-      { id: 7, street: 'North road 1', city: 'Winterfell', json: false },
-      undefined,
+      { street: 'North road 1', city: 'Winterfell', json: false },
+      [7],
     );
 
     const { url, init } = lastRequest();
@@ -389,9 +385,9 @@ describe('contact commands', () => {
       throw new Error(`process.exit(${code})`);
     }) as (code?: number) => never);
 
-    await expect(
-      updateAddress.action({ id: 7, json: false }, undefined),
-    ).rejects.toThrow('process.exit(1)');
+    await expect(updateAddress.action({ json: false }, [7])).rejects.toThrow(
+      'process.exit(1)',
+    );
     expect(error).toHaveBeenCalledWith(
       'You must provide at least one of --street, --zip, --city, --country or --category.',
     );
@@ -402,7 +398,7 @@ describe('contact commands', () => {
     respondWith(null);
     const success = vi.spyOn(consola, 'success').mockImplementation(() => {});
 
-    await removeAddress.action({ id: 7, yes: true, json: false }, undefined);
+    await removeAddress.action({ yes: true, json: false }, [7]);
 
     const { url, init } = lastRequest();
     expect(init.method).toBe('DELETE');
@@ -417,7 +413,7 @@ describe('contact commands', () => {
     }) as (code?: number) => never);
 
     await expect(
-      removeAddress.action({ id: 7, yes: false, json: false }, undefined),
+      removeAddress.action({ yes: false, json: false }, [7]),
     ).rejects.toThrow('process.exit(1)');
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -429,7 +425,7 @@ describe('contact commands', () => {
     }) as (code?: number) => never);
 
     await expect(
-      remove.action({ id: 42, yes: false, json: false }, undefined),
+      remove.action({ yes: false, json: false }, [42]),
     ).rejects.toThrow('process.exit(1)');
     expect(error).toHaveBeenCalledWith(
       'You must pass --yes to confirm this action when running in a non-interactive environment.',

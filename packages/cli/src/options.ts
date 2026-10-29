@@ -4,7 +4,7 @@ import { promptConfirm, promptText } from './prompt';
 
 interface RequiredOption<T> {
   value: T | undefined;
-  /** Describes the missing option, for example `a voucher ID via --id`. */
+  /** Describes the missing value, for example `a voucher ID as a positional argument`. */
   requirement: string;
   /** Question asked when the option is missing in an interactive environment. */
   question: string;

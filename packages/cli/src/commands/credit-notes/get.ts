@@ -1,26 +1,27 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { contactLabel, printJson } from '../../output';
 
 export default defineCommand({
   description: 'Show a single credit note.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('ID of the credit note. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('ID of the credit note. If omitted, you will be prompted.'),
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const creditNoteId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a credit note ID via --id',
+    const creditNoteId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a credit note ID as a positional argument',
       question: 'Enter the credit note ID:',
     });
     const creditNote = await client.creditNotes.get({

@@ -293,10 +293,7 @@ describe('voucher commands', () => {
         { objects: documentFile },
       );
       const path = await tempPath();
-      await documentCommand.action(
-        { id: 42, output: path, json: true },
-        undefined,
-      );
+      await documentCommand.action({ output: path, json: true }, [42]);
       expect(requestAt(fetchMock, 0).url).toContain('/Voucher/42');
       expect(requestAt(fetchMock, 1).url).toContain('/Document/7/download');
       expect(await readFile(path)).toEqual(documentContent);
@@ -314,7 +311,7 @@ describe('voucher commands', () => {
       const cwd = process.cwd();
       process.chdir(await mkdtemp(join(tmpdir(), 'sevdesk-cli-')));
       try {
-        await documentCommand.action({ id: 42, json: true }, undefined);
+        await documentCommand.action({ json: true }, [42]);
         expect(await readFile('voucher-42.pdf')).toEqual(documentContent);
       } finally {
         process.chdir(cwd);
@@ -329,7 +326,7 @@ describe('voucher commands', () => {
       const cwd = process.cwd();
       process.chdir(await mkdtemp(join(tmpdir(), 'sevdesk-cli-')));
       try {
-        await documentCommand.action({ id: 42, json: true }, undefined);
+        await documentCommand.action({ json: true }, [42]);
         expect(await readFile('escape.pdf')).toEqual(documentContent);
       } finally {
         process.chdir(cwd);
@@ -348,10 +345,7 @@ describe('voucher commands', () => {
         },
       );
       const path = await tempPath();
-      await documentCommand.action(
-        { id: 42, output: path, json: false },
-        undefined,
-      );
+      await documentCommand.action({ output: path, json: false }, [42]);
       expect(await readFile(path, 'utf8')).toBe('<xml/>');
     });
 
@@ -360,10 +354,7 @@ describe('voucher commands', () => {
         objects: [{ ...voucher, document: null }],
       });
       await expectExit(
-        documentCommand.action(
-          { id: 42, output: await tempPath(), json: false },
-          undefined,
-        ),
+        documentCommand.action({ output: await tempPath(), json: false }, [42]),
       );
       expect(consola.error).toHaveBeenCalledWith(
         'Voucher 42 has no document attached.',
@@ -376,10 +367,7 @@ describe('voucher commands', () => {
       const path = await tempPath();
       await writeFile(path, 'existing');
       await expect(
-        documentCommand.action(
-          { id: 42, output: path, json: false },
-          undefined,
-        ),
+        documentCommand.action({ output: path, json: false }, [42]),
       ).rejects.toThrow('EEXIST');
       expect(await readFile(path, 'utf8')).toBe('existing');
     });
@@ -388,7 +376,7 @@ describe('voucher commands', () => {
   describe('get', () => {
     it('prints the voucher as JSON', async () => {
       const fetchMock = stubFetch({ objects: [voucher] });
-      await getCommand.action({ id: 42, json: true }, undefined);
+      await getCommand.action({ json: true }, [42]);
       const { url } = requestAt(fetchMock, 0);
       expect(url).toContain('/Voucher/42');
       expect(url).toContain('embed=supplier');
@@ -399,7 +387,7 @@ describe('voucher commands', () => {
 
     it('prints the service period', async () => {
       stubFetch({ objects: [voucher] });
-      await getCommand.action({ id: 42, json: false }, undefined);
+      await getCommand.action({ json: false }, [42]);
       expect(consola.info).toHaveBeenCalledWith(
         'Service period: 2024-01-01 – 2024-01-31',
       );
@@ -409,7 +397,7 @@ describe('voucher commands', () => {
       stubFetch({
         objects: [{ ...voucher, deliveryDate: null, deliveryDateUntil: null }],
       });
-      await getCommand.action({ id: 42, json: false }, undefined);
+      await getCommand.action({ json: false }, [42]);
       expect(consola.info).toHaveBeenCalledWith('Service period: -');
     });
 
@@ -429,13 +417,13 @@ describe('voucher commands', () => {
           },
         ],
       });
-      await getCommand.action({ id: 42, json: false }, undefined);
+      await getCommand.action({ json: false }, [42]);
       expect(consola.info).toHaveBeenCalledWith('Supplier: Erika Musterfrau');
     });
 
     it('exits without an id in a non-interactive environment', async () => {
       const fetchMock = stubFetch({ objects: [voucher] });
-      await expectExit(getCommand.action({ json: false }, undefined));
+      await expectExit(getCommand.action({ json: false }, []));
       expect(fetchMock).not.toHaveBeenCalled();
     });
   });
@@ -458,7 +446,6 @@ describe('voucher commands', () => {
       );
       await createCommand.action(
         {
-          file: path,
           status: 'open',
           creditDebit: 'C',
           taxRule: 9,
@@ -470,7 +457,7 @@ describe('voucher commands', () => {
           description: 'RE-1',
           json: false,
         },
-        undefined,
+        [path],
       );
       const upload = requestAt(fetchMock, 0);
       expect(upload.url).toContain('/Voucher/Factory/uploadTempFile');
@@ -512,7 +499,6 @@ describe('voucher commands', () => {
       );
       await createCommand.action(
         {
-          file: path,
           status: 'open',
           creditDebit: 'C',
           taxRule: 9,
@@ -525,7 +511,7 @@ describe('voucher commands', () => {
           deliveryDateUntil: '31.03.2024',
           json: false,
         },
-        undefined,
+        [path],
       );
       const body = JSON.parse(requestAt(fetchMock, 1).init.body as string);
       expect(body.voucher).toMatchObject({
@@ -539,7 +525,6 @@ describe('voucher commands', () => {
       await expectExit(
         createCommand.action(
           {
-            file: await writeReceipt(),
             status: 'open',
             creditDebit: 'C',
             taxRule: 9,
@@ -551,7 +536,7 @@ describe('voucher commands', () => {
             deliveryDateUntil: '31.03.2024',
             json: false,
           },
-          undefined,
+          [await writeReceipt()],
         ),
       );
       expect(consola.error).toHaveBeenCalledWith(
@@ -568,7 +553,6 @@ describe('voucher commands', () => {
       );
       await createCommand.action(
         {
-          file: path,
           status: 'draft',
           creditDebit: 'C',
           taxRule: 9,
@@ -579,7 +563,7 @@ describe('voucher commands', () => {
           supplierName: 'Acme GmbH',
           json: false,
         },
-        undefined,
+        [path],
       );
       const body = JSON.parse(requestAt(fetchMock, 1).init.body as string);
       expect(body.voucher.status).toBe(50);
@@ -592,7 +576,6 @@ describe('voucher commands', () => {
       await expectExit(
         createCommand.action(
           {
-            file: join(tmpdir(), 'sevdesk-cli-missing.pdf'),
             status: 'open',
             creditDebit: 'C',
             taxRule: 9,
@@ -603,7 +586,7 @@ describe('voucher commands', () => {
             supplierName: 'Acme GmbH',
             json: false,
           },
-          undefined,
+          [join(tmpdir(), 'sevdesk-cli-missing.pdf')],
         ),
       );
       expect(fetchMock).not.toHaveBeenCalled();
@@ -618,7 +601,6 @@ describe('voucher commands', () => {
       );
       await bookCommand.action(
         {
-          id: 42,
           amount: 119,
           date: '2024-02-01T00:00:00.000Z',
           type: 'FULL_PAYMENT',
@@ -627,7 +609,7 @@ describe('voucher commands', () => {
           yes: true,
           json: false,
         },
-        undefined,
+        [42],
       );
       expect(requestAt(fetchMock, 0).url).toContain('/Voucher/42');
       const { url, init } = requestAt(fetchMock, 1);
@@ -655,7 +637,6 @@ describe('voucher commands', () => {
       );
       await bookCommand.action(
         {
-          id: 42,
           amount: 119,
           date: '2024-02-01T00:00:00.000Z',
           type: 'FULL_PAYMENT',
@@ -663,7 +644,7 @@ describe('voucher commands', () => {
           yes: true,
           json: false,
         },
-        undefined,
+        [42],
       );
       expect(
         JSON.parse(requestAt(fetchMock, 1).init.body as string),
@@ -677,7 +658,6 @@ describe('voucher commands', () => {
       );
       await bookCommand.action(
         {
-          id: 42,
           amount: -119,
           date: '2024-02-01T00:00:00.000Z',
           type: 'FULL_PAYMENT',
@@ -685,7 +665,7 @@ describe('voucher commands', () => {
           yes: true,
           json: false,
         },
-        undefined,
+        [42],
       );
       expect(
         JSON.parse(requestAt(fetchMock, 1).init.body as string),
@@ -698,7 +678,6 @@ describe('voucher commands', () => {
       vi.mocked(promptConfirm).mockResolvedValue(false);
       await bookCommand.action(
         {
-          id: 42,
           amount: 119,
           date: '2024-02-01T00:00:00.000Z',
           type: 'FULL_PAYMENT',
@@ -706,7 +685,7 @@ describe('voucher commands', () => {
           yes: false,
           json: false,
         },
-        undefined,
+        [42],
       );
       expect(promptConfirm).toHaveBeenCalledWith('Book 119 on voucher 42?');
       expect(fetchMock).not.toHaveBeenCalled();
@@ -717,10 +696,7 @@ describe('voucher commands', () => {
   describe('reset-to-open', () => {
     it('resets the voucher with --yes', async () => {
       const fetchMock = stubFetch({ objects: voucher });
-      await resetToOpenCommand.action(
-        { id: 42, yes: true, json: false },
-        undefined,
-      );
+      await resetToOpenCommand.action({ yes: true, json: false }, [42]);
       const { url, init } = requestAt(fetchMock, 0);
       expect(url).toContain('/Voucher/42/resetToOpen');
       expect(init.method).toBe('PUT');
@@ -732,13 +708,12 @@ describe('voucher commands', () => {
       const fetchMock = stubFetch({ objects: voucher });
       await updateCommand.action(
         {
-          id: 42,
           deliveryDate: '01.01.2024',
           deliveryDateUntil: '31.01.2024',
           clearDeliveryDateUntil: false,
           json: false,
         },
-        undefined,
+        [42],
       );
       const { url, init } = requestAt(fetchMock, 0);
       expect(url).toContain('/Voucher/42');
@@ -757,8 +732,8 @@ describe('voucher commands', () => {
         objects: { ...voucher, deliveryDateUntil: null },
       });
       await updateCommand.action(
-        { id: 42, clearDeliveryDateUntil: true, json: true },
-        undefined,
+        { clearDeliveryDateUntil: true, json: true },
+        [42],
       );
       const { url, init } = requestAt(fetchMock, 0);
       expect(url).toContain('/Voucher/42');
@@ -778,12 +753,11 @@ describe('voucher commands', () => {
       await expectExit(
         updateCommand.action(
           {
-            id: 42,
             deliveryDateUntil: '31.01.2024',
             clearDeliveryDateUntil: true,
             json: false,
           },
-          undefined,
+          [42],
         ),
       );
       expect(fetchMock).not.toHaveBeenCalled();
@@ -806,7 +780,7 @@ describe('voucher commands', () => {
         { objects: [] },
         { objects: { voucher: { ...draft, status: '100' }, voucherPos: [] } },
       );
-      await openCommand.action({ id: 42, json: true }, undefined);
+      await openCommand.action({ json: true }, [42]);
       expect(requestAt(fetchMock, 1).url).toContain('voucher%5Bid%5D=42');
       const save = requestAt(fetchMock, 3);
       expect(save.url).toContain('/Voucher/Factory/saveVoucher');
@@ -850,7 +824,7 @@ describe('voucher commands', () => {
       ],
     ])('refuses %s without saving', async (_, stored) => {
       const fetchMock = stubFetch({ objects: [stored] });
-      await expectExit(openCommand.action({ id: 42, json: false }, undefined));
+      await expectExit(openCommand.action({ json: false }, [42]));
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
@@ -861,7 +835,7 @@ describe('voucher commands', () => {
         { objects: [{ ...position, accountDatev: null }] },
         { objects: [] },
       );
-      await expectExit(openCommand.action({ id: 42, json: false }, undefined));
+      await expectExit(openCommand.action({ json: false }, [42]));
       expect(fetchMock).toHaveBeenCalledTimes(4);
     });
   });
@@ -869,10 +843,7 @@ describe('voucher commands', () => {
   describe('enshrine', () => {
     it('enshrines the voucher with --yes', async () => {
       const fetchMock = stubFetch(undefined);
-      await enshrineCommand.action(
-        { id: 42, yes: true, json: true },
-        undefined,
-      );
+      await enshrineCommand.action({ yes: true, json: true }, [42]);
       const { url, init } = requestAt(fetchMock, 0);
       expect(url).toContain('/Voucher/42/enshrine');
       expect(init.method).toBe('PUT');
@@ -884,7 +855,7 @@ describe('voucher commands', () => {
     it('exits without --yes in a non-interactive environment', async () => {
       const fetchMock = stubFetch();
       await expectExit(
-        enshrineCommand.action({ id: 42, yes: false, json: false }, undefined),
+        enshrineCommand.action({ yes: false, json: false }, [42]),
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });

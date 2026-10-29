@@ -1,24 +1,25 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { confirmOrAbort, requireNumberOption } from '../../options';
+import { confirmOrAbort } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Enshrine a voucher so that it can no longer be changed.',
+  args: z.tuple([idArgument.optional().describe('ID of the voucher.')]),
   options: defineOptions(
     z.object({
-      id: z.coerce.number().optional().describe('ID of the voucher.'),
       yes: z.boolean().default(false).describe('Skip the confirmation prompt.'),
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const voucherId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a voucher ID via --id',
+    const voucherId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a voucher ID as a positional argument',
       question: 'Enter the voucher ID:',
     });
     const confirmed = await confirmOrAbort({

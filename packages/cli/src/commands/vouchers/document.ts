@@ -3,18 +3,19 @@ import { writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Download the document attached to a voucher.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('ID of the voucher. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('ID of the voucher. If omitted, you will be prompted.'),
       output: z
         .string()
         .optional()
@@ -24,11 +25,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const voucherId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a voucher ID via --id',
+    const voucherId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a voucher ID as a positional argument',
       question: 'Enter the voucher ID:',
     });
     const voucher = await client.vouchers.get({ voucherId });

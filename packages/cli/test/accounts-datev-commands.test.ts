@@ -87,7 +87,7 @@ describe('accounts-datev commands', () => {
   it('shows a single account as JSON', async () => {
     respondWith([account]);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await getCommand.action({ id: 900001, json: true }, undefined);
+    await getCommand.action({ json: true }, [900001]);
     expect(requestAt(0).url.pathname).toBe('/api/v1/AccountDatev/900001');
     expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toEqual(account);
   });

@@ -1,18 +1,19 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { contactLabel, printJson } from '../../output';
 
 export default defineCommand({
   description: 'Show a single invoice.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('ID of the invoice. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('ID of the invoice. If omitted, you will be prompted.'),
       positions: z
         .boolean()
         .optional()
@@ -20,11 +21,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const invoiceId = await requireNumberOption({
-      value: options.id,
-      requirement: 'an invoice ID via --id',
+    const invoiceId = await requireIdArgument({
+      value: targetId,
+      requirement: 'an invoice ID as a positional argument',
       question: 'Enter the invoice ID:',
     });
     const invoice = await client.invoices.get({

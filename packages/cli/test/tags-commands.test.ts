@@ -126,7 +126,7 @@ describe('tag commands', () => {
     respondWith(null);
     const success = vi.spyOn(consola, 'success').mockImplementation(() => {});
 
-    await remove.action({ id: 3, yes: true, json: false }, undefined);
+    await remove.action({ yes: true, json: false }, [3]);
 
     const { url, init } = lastRequest();
     expect(init.method).toBe('DELETE');
@@ -141,7 +141,7 @@ describe('tag commands', () => {
     }) as (code?: number) => never);
 
     await expect(
-      remove.action({ id: 3, yes: false, json: false }, undefined),
+      remove.action({ yes: false, json: false }, [3]),
     ).rejects.toThrow('process.exit(1)');
     expect(error).toHaveBeenCalledWith(
       'You must pass --yes to confirm this action when running in a non-interactive environment.',

@@ -1,18 +1,19 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Update a contact.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('The contact ID. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('The contact ID. If omitted, you will be prompted.'),
       name: z
         .string()
         .optional()
@@ -46,11 +47,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const contactId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a contact ID via --id',
+    const contactId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a contact ID as a positional argument',
       question: 'Enter the contact ID:',
     });
     const contact = await client.contacts.update({

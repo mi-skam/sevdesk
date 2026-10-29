@@ -114,7 +114,7 @@ describe('credit note commands', () => {
   describe('get', () => {
     it('prints the credit note as JSON', async () => {
       const fetchMock = stubFetch({ objects: [creditNote] });
-      await getCommand.action({ id: 42, json: true }, undefined);
+      await getCommand.action({ json: true }, [42]);
       const { url } = requestAt(fetchMock, 0);
       expect(url).toContain('/CreditNote/42');
       expect(url).toContain('embed=contact');
@@ -139,8 +139,8 @@ describe('credit note commands', () => {
         'credit-note.pdf',
       );
       await pdfCommand.action(
-        { id: 42, output: path, preventSendBy: true, json: false },
-        undefined,
+        { output: path, preventSendBy: true, json: false },
+        [42],
       );
       const { url, init } = requestAt(fetchMock, 0);
       expect(init.method).toBe('GET');

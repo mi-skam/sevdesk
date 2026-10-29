@@ -3,18 +3,19 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Download the PDF of an order.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('ID of the order. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('ID of the order. If omitted, you will be prompted.'),
       output: z
         .string()
         .optional()
@@ -28,11 +29,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const orderId = await requireNumberOption({
-      value: options.id,
-      requirement: 'an order ID via --id',
+    const orderId = await requireIdArgument({
+      value: targetId,
+      requirement: 'an order ID as a positional argument',
       question: 'Enter the order ID:',
     });
     const pdf = await client.orders.getPdf({

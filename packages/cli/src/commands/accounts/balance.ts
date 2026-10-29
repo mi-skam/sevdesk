@@ -1,18 +1,19 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Show the balance of a check account at a given date.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('The check account ID. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('The check account ID. If omitted, you will be prompted.'),
       date: z
         .string()
         .default(() => new Date().toISOString().slice(0, 10))
@@ -20,11 +21,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const checkAccountId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a check account ID via --id',
+    const checkAccountId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a check account ID as a positional argument',
       question: 'Enter the check account ID:',
     });
     const balance = await client.checkAccounts.getBalanceAtDate({

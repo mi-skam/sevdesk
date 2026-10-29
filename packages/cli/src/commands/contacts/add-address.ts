@@ -1,18 +1,20 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Add an address to a contact.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('The contact ID. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      contact: z.coerce
-        .number()
-        .optional()
-        .describe('The contact ID. If omitted, you will be prompted.'),
       street: z.string().optional().describe('Street and house number.'),
       zip: z.string().optional().describe('Zip code.'),
       city: z.string().optional().describe('City name.'),
@@ -31,11 +33,11 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const contactId = await requireNumberOption({
-      value: options.contact,
-      requirement: 'a contact ID via --contact',
+    const contactId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a contact ID as a positional argument',
       question: 'Enter the contact ID:',
     });
     const countryId = await requireNumberOption({
