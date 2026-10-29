@@ -10,6 +10,7 @@
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces",
+    "test:terminal": "npm run build && npm run test:terminal -w @genz-its/sevdesk-cli",
     "lint": "eslint . && prettier --check .",
     "fmt": "eslint --fix . && prettier --write ."
   },
