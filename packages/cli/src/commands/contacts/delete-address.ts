@@ -1,29 +1,31 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { confirmOrAbort, requireNumberOption } from '../../options';
+import { confirmOrAbort } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Delete an address of a contact.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe(
+        'The contact address ID, as shown by contacts:get. If omitted, you will be prompted.',
+      ),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe(
-          'The contact address ID, as shown by contacts:get. If omitted, you will be prompted.',
-        ),
       yes: z.boolean().default(false).describe('Skip the confirmation prompt.'),
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const contactAddressId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a contact address ID via --id',
+    const contactAddressId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a contact address ID as a positional argument',
       question: 'Enter the contact address ID:',
     });
     const confirmed = await confirmOrAbort({

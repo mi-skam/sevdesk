@@ -1,20 +1,21 @@
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
   description: 'Update an address of a contact.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe(
+        'The contact address ID, as shown by contacts:get. If omitted, you will be prompted.',
+      ),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe(
-          'The contact address ID, as shown by contacts:get. If omitted, you will be prompted.',
-        ),
       street: z.string().optional().describe('Street and house number.'),
       zip: z.string().optional().describe('Zip code.'),
       city: z.string().optional().describe('City name.'),
@@ -31,7 +32,7 @@ export default defineCommand({
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const fields = {
       street: options.street,
       zip: options.zip,
@@ -46,9 +47,9 @@ export default defineCommand({
       process.exit(1);
     }
     const client = await requireClient();
-    const contactAddressId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a contact address ID via --id',
+    const contactAddressId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a contact address ID as a positional argument',
       question: 'Enter the contact address ID:',
     });
     const address = await client.contactAddresses.update({

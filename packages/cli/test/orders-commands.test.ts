@@ -118,7 +118,7 @@ describe('order commands', () => {
   describe('get', () => {
     it('prints the order as JSON', async () => {
       const fetchMock = stubFetch({ objects: [order] });
-      await getCommand.action({ id: 42, json: true }, undefined);
+      await getCommand.action({ json: true }, [42]);
       const { url } = requestAt(fetchMock, 0);
       expect(url).toContain('/Order/42');
       expect(url).toContain('embed=contact');
@@ -142,7 +142,7 @@ describe('order commands', () => {
           },
         ],
       });
-      await getCommand.action({ id: 42, json: false }, undefined);
+      await getCommand.action({ json: false }, [42]);
       expect(consola.info).toHaveBeenCalledWith('Contact: Beispiel GmbH');
     });
   });
@@ -162,8 +162,8 @@ describe('order commands', () => {
         'order.pdf',
       );
       await pdfCommand.action(
-        { id: 42, output: path, preventSendBy: true, json: false },
-        undefined,
+        { output: path, preventSendBy: true, json: false },
+        [42],
       );
       const { url, init } = requestAt(fetchMock, 0);
       expect(init.method).toBe('GET');

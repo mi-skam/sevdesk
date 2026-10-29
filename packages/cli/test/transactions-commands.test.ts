@@ -129,7 +129,7 @@ describe('transaction commands', () => {
     respondWith([transaction]);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await get.action({ id: 42, json: true }, undefined);
+    await get.action({ json: true }, [42]);
 
     expect(lastRequest().url.pathname).toBe(
       '/api/v1/CheckAccountTransaction/42',

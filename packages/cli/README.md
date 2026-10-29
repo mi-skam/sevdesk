@@ -44,13 +44,13 @@ sevdesk doctor
 sevdesk guidance:accounts --expense
 
 # Create an open voucher from a receipt file
-sevdesk vouchers:create --file receipt.pdf --supplier-name "ACME GmbH" --amount 119 --tax-rule 9 --account-datev 26
+sevdesk vouchers:create receipt.pdf --supplier-name "ACME GmbH" --amount 119 --tax-rule 9 --account-datev 26
 
 # List unbooked bank transactions
 sevdesk transactions:list --unbooked
 
 # Book the voucher against a bank transaction
-sevdesk vouchers:book --id 123 --amount 119 --check-account 1 --transaction 456
+sevdesk vouchers:book 123 --amount 119 --check-account 1 --transaction 456
 ```
 
 ## Authentication
@@ -63,6 +63,20 @@ The token is resolved in the following order:
 2. The config file written by `sevdesk login` (`~/.config/sevdesk/config.json`, respecting `XDG_CONFIG_HOME`).
 
 In CI or other automated environments, prefer the `SEVDESK_TOKEN` environment variable over storing the token on disk.
+
+## Argument conventions
+
+Primary inputs and target IDs are positional. Place them before options:
+
+```bash
+sevdesk invoices:get 42 --json
+sevdesk contacts:add-email 42 --email billing@example.com --json
+sevdesk vouchers:create receipt.pdf --supplier-name "ACME GmbH" --amount 119 --tax-rule 9 --account-datev 26
+```
+
+IDs must be positive safe integers. Commands with an existing interactive prompt still allow the target or receipt path to be omitted in a terminal; non-interactive calls must supply it. Filters (such as `invoices:list --contact 42`), relationship settings, output destinations (`--output`), and confirmations stay named options.
+
+**Breaking syntax change:** Target `--id` flags, `contacts:add-* --contact`, and `vouchers:create --file` have been removed, without compatibility aliases. Update scripts to pass these values positionally. JSON output and confirmation requirements are unchanged.
 
 ## Scripting
 
@@ -109,9 +123,11 @@ sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 - [`export:transactions`](#exporttransactions)
 - [`export:vouchers`](#exportvouchers)
 - [`guidance:accounts`](#guidanceaccounts)
+- [`invoices:create`](#invoicescreate)
 - [`invoices:get`](#invoicesget)
 - [`invoices:list`](#invoiceslist)
 - [`invoices:pdf`](#invoicespdf)
+- [`numbering:get`](#numberingget)
 - [`orders:get`](#ordersget)
 - [`orders:list`](#orderslist)
 - [`orders:pdf`](#orderspdf)
@@ -172,12 +188,13 @@ sevdesk doctor [options]
 Show a single booking account (AccountDatev), including hidden accounts that [`accounts-datev:list`](#accounts-datevlist) does not return. Backed by an undocumented sevdesk endpoint that may change without notice.
 
 ```bash
-sevdesk accounts-datev:get [options]
+sevdesk accounts-datev:get [id] [options]
 ```
+
+**Argument:** `id` — The booking account ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The booking account ID. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `accounts-datev:list`
@@ -201,12 +218,13 @@ sevdesk accounts-datev:list [options]
 Show the balance of a check account at a given date. The balance is the sum of all transactions known to sevdesk, which is not necessarily the real bank balance.
 
 ```bash
-sevdesk accounts:balance [options]
+sevdesk accounts:balance [id] [options]
 ```
+
+**Argument:** `id` — The check account ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The check account ID. If omitted, you will be prompted.
 - `--date`: The date to calculate the balance for (`YYYY-MM-DD`). Defaults to today.
 - `--json`: Output in JSON format.
 
@@ -245,12 +263,13 @@ sevdesk accounts:create-file-import [options]
 Show a single check account.
 
 ```bash
-sevdesk accounts:get [options]
+sevdesk accounts:get [id] [options]
 ```
+
+**Argument:** `id` — The check account ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The check account ID. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `accounts:list`
@@ -272,12 +291,13 @@ sevdesk accounts:list [options]
 Add an address to a contact.
 
 ```bash
-sevdesk contacts:add-address [options]
+sevdesk contacts:add-address [contact-id] [options]
 ```
+
+**Argument:** `contact-id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--contact`: The contact ID. If omitted, you will be prompted.
 - `--street`: Street and house number.
 - `--zip`: Zip code.
 - `--city`: City name.
@@ -290,12 +310,13 @@ sevdesk contacts:add-address [options]
 Add an e-mail address to a contact.
 
 ```bash
-sevdesk contacts:add-email [options]
+sevdesk contacts:add-email [contact-id] [options]
 ```
+
+**Argument:** `contact-id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--contact`: The contact ID. If omitted, you will be prompted.
 - `--email`: The e-mail address. If omitted, you will be prompted.
 - `--key`: ID of the communication way key: `1` private, `2` work, `7` newsletter, `8` invoicing. Defaults to `2`.
 - `--main`: Mark the e-mail address as the main one of the contact. Defaults to `false`.
@@ -306,12 +327,13 @@ sevdesk contacts:add-email [options]
 Add a phone number to a contact.
 
 ```bash
-sevdesk contacts:add-phone [options]
+sevdesk contacts:add-phone [contact-id] [options]
 ```
+
+**Argument:** `contact-id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--contact`: The contact ID. If omitted, you will be prompted.
 - `--phone`: The phone number. If omitted, you will be prompted.
 - `--key`: ID of the communication way key: `1` private, `2` work, `3` fax, `4` mobile. Defaults to `2`.
 - `--main`: Mark the phone number as the main one of the contact. Defaults to `false`.
@@ -342,12 +364,13 @@ sevdesk contacts:create [options]
 Delete a contact.
 
 ```bash
-sevdesk contacts:delete [options]
+sevdesk contacts:delete [id] [options]
 ```
+
+**Argument:** `id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The contact ID. If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -356,12 +379,13 @@ sevdesk contacts:delete [options]
 Delete an address of a contact.
 
 ```bash
-sevdesk contacts:delete-address [options]
+sevdesk contacts:delete-address [address-id] [options]
 ```
+
+**Argument:** `address-id` — The contact address ID, as shown by [`contacts:get`](#contactsget). If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The contact address ID, as shown by [`contacts:get`](#contactsget). If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -370,12 +394,13 @@ sevdesk contacts:delete-address [options]
 Show a single contact with its addresses and communication ways.
 
 ```bash
-sevdesk contacts:get [options]
+sevdesk contacts:get [id] [options]
 ```
+
+**Argument:** `id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The contact ID. If omitted, you will be prompted.
 - `--json`: Output in JSON format. Prints an object with the keys `contact`, `addresses` and `communicationWays`.
 
 ### `contacts:list`
@@ -401,12 +426,13 @@ sevdesk contacts:list [options]
 Update a contact. Only the given fields are changed.
 
 ```bash
-sevdesk contacts:update [options]
+sevdesk contacts:update [id] [options]
 ```
+
+**Argument:** `id` — The contact ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The contact ID. If omitted, you will be prompted.
 - `--name`: Name of the organization. Not to be used for persons.
 - `--surename`: First name of the person. Not to be used for organizations.
 - `--familyname`: Last name of the person. Not to be used for organizations.
@@ -422,12 +448,13 @@ sevdesk contacts:update [options]
 Update an address of a contact. Only the given fields are changed.
 
 ```bash
-sevdesk contacts:update-address [options]
+sevdesk contacts:update-address [address-id] [options]
 ```
+
+**Argument:** `address-id` — The contact address ID, as shown by [`contacts:get`](#contactsget). If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The contact address ID, as shown by [`contacts:get`](#contactsget). If omitted, you will be prompted.
 - `--street`: Street and house number.
 - `--zip`: Zip code.
 - `--city`: City name.
@@ -440,12 +467,13 @@ sevdesk contacts:update-address [options]
 Show a single credit note.
 
 ```bash
-sevdesk credit-notes:get [options]
+sevdesk credit-notes:get [id] [options]
 ```
+
+**Argument:** `id` — ID of the credit note. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the credit note. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `credit-notes:list`
@@ -472,12 +500,13 @@ sevdesk credit-notes:list [options]
 Download the PDF of a credit note.
 
 ```bash
-sevdesk credit-notes:pdf [options]
+sevdesk credit-notes:pdf [id] [options]
 ```
+
+**Argument:** `id` — ID of the credit note. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the credit note. If omitted, you will be prompted.
 - `--output`: Path to write the PDF to. Defaults to the file name reported by the API.
 - `--prevent-send-by`: Do not mark the credit note as sent by download. Defaults to `false`.
 - `--json`: Output in JSON format.
@@ -578,17 +607,92 @@ sevdesk guidance:accounts [options]
 - `--expense`: Only show accounts that can be used for expenses. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `invoices:create`
+
+Create a regular **draft** invoice from a JSON file, including multiple positions.
+Never sends, books, or finalizes the invoice. Calls the SDK's `invoices.save` method.
+
+```bash
+sevdesk invoices:create invoice.json --dry-run --json
+sevdesk invoices:create invoice.json --yes --json
+```
+
+**Argument:** `invoice.json` (required JSON input path, containing the invoice and positions).
+
+**Options:**
+
+- `--dry-run`: Validate and print the normalized payload without authentication or API calls.
+- `--yes`: Confirm draft creation; required in non-interactive mode unless using `--dry-run`.
+- `--json`: Print the SDK result (`invoice` and `positions`) as JSON.
+
+Example `invoice.json` (invented IDs; resolve real contact, SevUser, tax rule, and unit IDs first):
+
+```json
+{
+  "invoice": {
+    "contactId": 7,
+    "contactPersonId": 8,
+    "invoiceDate": "2024-02-29",
+    "deliveryDate": "2024-02-01",
+    "deliveryDateUntil": "2024-02-28",
+    "currency": "EUR",
+    "taxRuleId": 1,
+    "taxText": "Umsatzsteuer 19%",
+    "showNet": true,
+    "timeToPay": 14
+  },
+  "positions": [
+    {
+      "name": "Example consulting",
+      "quantity": 2,
+      "price": 100,
+      "taxRate": 19,
+      "unityId": 1
+    }
+  ]
+}
+```
+
+Dates must be valid `YYYY-MM-DD` calendar dates. The service date and optional
+period end cannot exceed the invoice date. `showNet` explicitly selects net
+(`true`) or gross (`false`) unit prices. VAT treatment is required, not inferred.
+At least one position is required. Positions are numbered automatically from zero;
+the recipient's default address is used. Validate the contact's address before creating.
+
+`invoiceNumber` may be omitted or blank: the CLI reads the configured numbering
+format (Nummernformat) and all existing invoice numbers, including drafts, then
+uses the highest matching numeric value + 1, respecting a higher configured
+starting counter. It supplies that number explicitly to sevdesk and defaults an
+omitted subject (Betreff) to `Rechnung Nr. <number>`. Explicit numbers and subjects
+are preserved. A final duplicate check fails without posting if the number became
+occupied; it does not silently renumber. The check is not an atomic reservation.
+Only literal formats containing exactly one `%NUMBER` are supported automatically;
+other formats require an explicit number. Offline `--dry-run` reports pending
+number resolution without making account requests.
+
+The invoice optionally accepts `header`, `headText`, `footText`,
+`customerInternalNote`, `smallSettlement`, and `paymentMethodId`. Positions optionally accept `text`
+and percentage `discount`. Unknown fields are rejected, including existing invoice IDs.
+Only status `100` and type `RE` are allowed (both defaulted); special invoice types
+and editing existing invoices are intentionally not supported.
+
+Local validation does not establish tax correctness or validate IDs against the
+account. After creating, inspect the returned ID with `invoices:get`. A timed-out
+creation may have succeeded: check for duplicates before retrying.
+
 ### `invoices:get`
 
 Show a single invoice.
 
 ```bash
-sevdesk invoices:get [options]
+sevdesk invoices:get [id] [options]
 ```
+
+**Argument:** `id` — ID of the invoice. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the invoice. If omitted, you will be prompted.
+- `--positions`: Include all line items. With `--json`, returns `{ invoice, positions }` instead of the invoice alone.
 - `--json`: Output in JSON format.
 
 ### `invoices:list`
@@ -615,27 +719,53 @@ sevdesk invoices:list [options]
 Download the PDF of an invoice.
 
 ```bash
-sevdesk invoices:pdf [options]
+sevdesk invoices:pdf [id] [options]
 ```
+
+**Argument:** `id` — ID of the invoice. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the invoice. If omitted, you will be prompted.
 - `--output`: Path to write the PDF to. Defaults to the file name reported by the API.
 - `--prevent-send-by`: Do not mark the invoice as sent by download. Defaults to `false`.
 - `--json`: Output in JSON format.
+
+### `numbering:get`
+
+Read invoice or quote numbering configuration (Nummernkreis) without reserving
+or consuming a number. Uses `GET /SevSequence/Factory/getByType`, described in
+sevdesk's official API introduction under **The invoice number**.
+
+```bash
+sevdesk numbering:get --kind invoice
+sevdesk numbering:get --kind quote --json
+sevdesk numbering:get --kind quote --suggest --json
+```
+
+`--kind` defaults to `invoice` (Rechnung); `quote` means Angebot. Human output
+shows the format (Nummernformat) and configured counter (Eingestellter Zähler).
+JSON returns the sequence metadata. `--suggest` instead scans all existing numbers,
+including drafts, and returns `nextNumber`, `highestExistingNumber`,
+`configuredCounter`, `format`, `kind`, and `reserved: false`, using the same logic
+as creation. **The configured counter is not necessarily
+free:** existing drafts (Entwürfe) can already use it. For a simple `%NUMBER`
+format, inspect existing numbers, including drafts, numerically rather than
+lexicographically and choose at least the highest used number plus one while
+respecting a higher configured starting number. Recheck for duplicates before
+saving. This is not an atomic number reservation.
 
 ### `orders:get`
 
 Show a single order.
 
 ```bash
-sevdesk orders:get [options]
+sevdesk orders:get [id] [options]
 ```
+
+**Argument:** `id` — ID of the order. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the order. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `orders:list`
@@ -662,12 +792,13 @@ sevdesk orders:list [options]
 Download the PDF of an order.
 
 ```bash
-sevdesk orders:pdf [options]
+sevdesk orders:pdf [id] [options]
 ```
+
+**Argument:** `id` — ID of the order. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the order. If omitted, you will be prompted.
 - `--output`: Path to write the PDF to. Defaults to the file name reported by the API.
 - `--prevent-send-by`: Do not mark the order as sent by download. Defaults to `false`.
 - `--json`: Output in JSON format.
@@ -677,12 +808,13 @@ sevdesk orders:pdf [options]
 Show a single part.
 
 ```bash
-sevdesk parts:get [options]
+sevdesk parts:get [id] [options]
 ```
+
+**Argument:** `id` — The part ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The part ID. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `parts:list`
@@ -721,12 +853,13 @@ sevdesk tags:create [options]
 Delete a tag.
 
 ```bash
-sevdesk tags:delete [options]
+sevdesk tags:delete [id] [options]
 ```
+
+**Argument:** `id` — The tag ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The tag ID. If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -768,12 +901,13 @@ sevdesk transactions:create [options]
 Show a single transaction.
 
 ```bash
-sevdesk transactions:get [options]
+sevdesk transactions:get [id] [options]
 ```
+
+**Argument:** `id` — The transaction ID. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: The transaction ID. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `transactions:list`
@@ -801,12 +935,13 @@ sevdesk transactions:list [options]
 Book a payment on a voucher. For online check accounts (bank, PayPal, file import), pass the existing bank transaction via `--transaction`. For clearing accounts and cash registers, omit `--transaction` and sevdesk creates the transaction automatically.
 
 ```bash
-sevdesk vouchers:book [options]
+sevdesk vouchers:book [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--amount`: Amount to book. Can also be a partial amount. Pass it as a positive number — the sign is derived from the voucher, which the API requires to be negative for expense vouchers. If omitted, you will be prompted.
 - `--date`: Booking date as ISO 8601. Defaults to now.
 - `--type`: Type of the booking. Supported values are `FULL_PAYMENT`, `N` (partial), `CB` (cash discount), `O` (other), `OF` (reminder charges) and `MTC` (monetary traffic costs). Defaults to `FULL_PAYMENT`.
@@ -821,12 +956,13 @@ sevdesk vouchers:book [options]
 Create a voucher from a receipt file. The file is uploaded and attached to the voucher, which is created with a single position.
 
 ```bash
-sevdesk vouchers:create [options]
+sevdesk vouchers:create [receipt-file] [options]
 ```
+
+**Argument:** `receipt-file` — Path to the receipt file to attach, for example a PDF, an image or an XML invoice. If omitted, you will be prompted.
 
 **Options:**
 
-- `--file`: Path to the receipt file to attach, for example a PDF, an image or an XML invoice. If omitted, you will be prompted.
 - `--status`: Status of the created voucher. Supported values are `draft` and `open`. Defaults to `open`.
 - `--credit-debit`: `C` for expense (credit), `D` for income (debit) vouchers. Defaults to `C`.
 - `--tax-rule`: ID of the tax rule, for example `9` for deductible input tax expenses. If omitted, you will be prompted.
@@ -849,12 +985,13 @@ sevdesk vouchers:create [options]
 Download the document attached to a voucher.
 
 ```bash
-sevdesk vouchers:document [options]
+sevdesk vouchers:document [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--output`: Path to write the document to. Defaults to the file name reported by the API. Existing files are never overwritten.
 - `--json`: Output in JSON format.
 
@@ -863,12 +1000,13 @@ sevdesk vouchers:document [options]
 Enshrine a voucher so that it can no longer be changed. **This cannot be undone.**
 
 ```bash
-sevdesk vouchers:enshrine [options]
+sevdesk vouchers:enshrine [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -877,12 +1015,13 @@ sevdesk vouchers:enshrine [options]
 Show a single voucher.
 
 ```bash
-sevdesk vouchers:get [options]
+sevdesk vouchers:get [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `vouchers:list`
@@ -910,12 +1049,13 @@ sevdesk vouchers:list [options]
 Move a draft voucher to the open status. Everything else, including the attached document and the positions, stays unchanged. Exits with an error and changes nothing unless the voucher is a draft that is not enshrined.
 
 ```bash
-sevdesk vouchers:open [options]
+sevdesk vouchers:open [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `vouchers:positions`
@@ -938,12 +1078,13 @@ sevdesk vouchers:positions [options]
 Reset a voucher to the draft status. This unlinks existing payments.
 
 ```bash
-sevdesk vouchers:reset-to-draft [options]
+sevdesk vouchers:reset-to-draft [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -952,12 +1093,13 @@ sevdesk vouchers:reset-to-draft [options]
 Reset a voucher to the open status. This unlinks existing payments.
 
 ```bash
-sevdesk vouchers:reset-to-open [options]
+sevdesk vouchers:reset-to-open [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
@@ -966,12 +1108,13 @@ sevdesk vouchers:reset-to-open [options]
 Update the service period (Leistungszeitraum) of a voucher. Options you leave out keep their stored value.
 
 ```bash
-sevdesk vouchers:update [options]
+sevdesk vouchers:update [id] [options]
 ```
+
+**Argument:** `id` — ID of the voucher. If omitted, you will be prompted.
 
 **Options:**
 
-- `--id`: ID of the voucher. If omitted, you will be prompted.
 - `--delivery-date`: Start of the service period, or the single service date, as `dd.mm.yyyy` or Unix timestamp.
 - `--delivery-date-until`: End of the service period as `dd.mm.yyyy` or Unix timestamp.
 - `--clear-delivery-date-until`: Remove the end of the service period, leaving a single service date. Cannot be combined with `--delivery-date-until`. Defaults to `false`.

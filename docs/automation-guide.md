@@ -2,6 +2,8 @@
 
 How to set up an automated voucher workflow (upload receipts, match them to open bank transactions, book them) on top of `@genz-its/sevdesk-cli`.
 
+Primary files and target IDs are positional and precede options. The old target `--id` and receipt `--file` flags have been removed without aliases; update existing scripts accordingly. Filters such as `vouchers:list --contact` and relationship options such as `--transaction` are unchanged.
+
 ## 1. API token
 
 - Create the token in sevdesk under **Settings > User > API token**. It belongs to that (admin) user and never expires — but it dies irrecoverably if the user is deleted, so use a dedicated service user if possible.
@@ -22,8 +24,7 @@ How to set up an automated voucher workflow (upload receipts, match them to open
 ## 4. Creating vouchers
 
 ```bash
-sevdesk vouchers:create \
-  --file receipt.pdf \
+sevdesk vouchers:create receipt.pdf \
   --supplier-id <contactId> \
   --description <invoice number> \
   --voucher-date <dd.mm.yyyy> \
@@ -47,8 +48,7 @@ sevdesk transactions:list --unbooked --check-account <checkAccountId> --json
 - Match on: voucher gross equals the absolute transaction amount (expenses are negative), value date within a few days of the invoice or pay date, and payee name similar to the supplier name. **Only auto-book unambiguous matches; queue the rest for human review.**
 
 ```bash
-sevdesk vouchers:book \
-  --id <voucherId> \
+sevdesk vouchers:book <voucherId> \
   --amount <gross> \
   --check-account <checkAccountId> \
   --transaction <transactionId> \
@@ -59,7 +59,7 @@ sevdesk vouchers:book \
 - `--transaction` is **required** for online check accounts and **must be omitted** for offline ones.
 - Pass the transaction's value date as `--date` — the default is "now", which would falsify the payment date.
 - Partial payment: `--type N` with the partial amount; the voucher moves to status `750`.
-- Wrong match? `sevdesk vouchers:reset-to-open --id <voucherId> --yes` unlinks the payment — **unless the voucher is enshrined**.
+- Wrong match? `sevdesk vouchers:reset-to-open <voucherId> --yes` unlinks the payment — **unless the voucher is enshrined**.
 
 ## 6. Guardrails
 

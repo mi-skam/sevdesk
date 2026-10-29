@@ -99,7 +99,7 @@ describe('part commands', () => {
     respondWith([part]);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await get.action({ id: 7, json: true }, undefined);
+    await get.action({ json: true }, [7]);
 
     expect(lastRequest().url.pathname).toBe('/api/v1/Part/7');
     expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toEqual(part);
@@ -109,7 +109,7 @@ describe('part commands', () => {
     respondWith([part]);
     const info = vi.spyOn(consola, 'info').mockImplementation(() => {});
 
-    await get.action({ id: 7, json: false }, undefined);
+    await get.action({ json: false }, [7]);
 
     expect(info).toHaveBeenCalledWith('Part number: P-1');
     expect(info).toHaveBeenCalledWith('Tax rate: 19');
@@ -122,11 +122,11 @@ describe('part commands', () => {
       throw new Error(`process.exit(${code})`);
     }) as (code?: number) => never);
 
-    await expect(get.action({ json: false }, undefined)).rejects.toThrow(
+    await expect(get.action({ json: false }, [])).rejects.toThrow(
       'process.exit(1)',
     );
     expect(error).toHaveBeenCalledWith(
-      'You must provide a part ID via --id when running in a non-interactive environment.',
+      'You must provide a part ID as a positional argument when running in a non-interactive environment.',
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });

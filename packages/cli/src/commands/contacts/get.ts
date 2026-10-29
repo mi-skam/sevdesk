@@ -2,28 +2,29 @@ import type { CommunicationWay, ContactAddress } from '@genz-its/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
-import { requireNumberOption } from '../../options';
 import { printJson } from '../../output';
 import { fetchAll } from '../../pagination';
 
 export default defineCommand({
   description:
     'Show a single contact with its addresses and communication ways.',
+  args: z.tuple([
+    idArgument
+      .optional()
+      .describe('The contact ID. If omitted, you will be prompted.'),
+  ]),
   options: defineOptions(
     z.object({
-      id: z.coerce
-        .number()
-        .optional()
-        .describe('The contact ID. If omitted, you will be prompted.'),
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
-  action: async (options) => {
+  action: async (options, [targetId]) => {
     const client = await requireClient();
-    const contactId = await requireNumberOption({
-      value: options.id,
-      requirement: 'a contact ID via --id',
+    const contactId = await requireIdArgument({
+      value: targetId,
+      requirement: 'a contact ID as a positional argument',
       question: 'Enter the contact ID:',
     });
     const contact = await client.contacts.get({ contactId });

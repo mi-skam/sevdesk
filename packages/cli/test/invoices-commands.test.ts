@@ -112,9 +112,23 @@ describe('invoice commands', () => {
   });
 
   describe('get', () => {
+    it('includes all positions only when requested', async () => {
+      const positions = [{ id: '9', name: 'Example support', quantity: '2' }];
+      const fetchMock = stubFetch(
+        { objects: [invoice] },
+        { objects: positions },
+      );
+      await getCommand.action({ positions: true, json: true }, [42]);
+      expect(requestAt(fetchMock, 1).url).toContain('/Invoice/42/getPositions');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(vi.mocked(console.log).mock.calls[0]?.[0])).toEqual({
+        invoice,
+        positions,
+      });
+    });
     it('prints the invoice as JSON', async () => {
       const fetchMock = stubFetch({ objects: [invoice] });
-      await getCommand.action({ id: 42, json: true }, undefined);
+      await getCommand.action({ json: true }, [42]);
       const { url } = requestAt(fetchMock, 0);
       expect(url).toContain('/Invoice/42');
       expect(url).toContain('embed=contact');
@@ -138,7 +152,7 @@ describe('invoice commands', () => {
           },
         ],
       });
-      await getCommand.action({ id: 42, json: false }, undefined);
+      await getCommand.action({ json: false }, [42]);
       expect(consola.info).toHaveBeenCalledWith('Contact: Erika Musterfrau');
     });
   });
@@ -158,8 +172,8 @@ describe('invoice commands', () => {
         'invoice.pdf',
       );
       await pdfCommand.action(
-        { id: 42, output: path, preventSendBy: true, json: false },
-        undefined,
+        { output: path, preventSendBy: true, json: false },
+        [42],
       );
       const { url, init } = requestAt(fetchMock, 0);
       expect(init.method).toBe('GET');

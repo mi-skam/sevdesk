@@ -82,7 +82,7 @@ describe('check account commands', () => {
     respondWith([checkAccount]);
     const info = vi.spyOn(consola, 'info').mockImplementation(() => {});
 
-    await get.action({ id: 7, json: false }, undefined);
+    await get.action({ json: false }, [7]);
 
     expect(lastRequest().url.pathname).toBe('/api/v1/CheckAccount/7');
     expect(info).toHaveBeenCalledWith('Name: Business account');
@@ -92,7 +92,7 @@ describe('check account commands', () => {
     respondWith('123.45');
     const info = vi.spyOn(consola, 'info').mockImplementation(() => {});
 
-    await balance.action({ id: 7, date: '2024-01-31', json: false }, undefined);
+    await balance.action({ date: '2024-01-31', json: false }, [7]);
 
     const { url } = lastRequest();
     expect(url.pathname).toBe('/api/v1/CheckAccount/7/getBalanceAtDate');

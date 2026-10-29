@@ -107,6 +107,8 @@ export interface SaveInvoiceOptions {
 }
 
 export interface ListInvoicesOptions extends ListOptions {
+  /** Includes all invoice types, including recurring and reminder records. */
+  showAll?: boolean;
   status?: InvoiceStatus;
   invoiceNumber?: string;
   startDate?: DateInput;
@@ -308,6 +310,7 @@ export class InvoicesResource extends BaseResource {
   /** Retrieves invoices via `GET /Invoice`. */
   public list(options: ListInvoicesOptions = {}): Promise<Invoice[]> {
     const {
+      showAll,
       status,
       invoiceNumber,
       startDate,
@@ -321,6 +324,7 @@ export class InvoicesResource extends BaseResource {
       method: 'GET',
       path: '/Invoice',
       query: {
+        showAll,
         status,
         invoiceNumber,
         startDate: toOptionalInvoiceDate(startDate),
