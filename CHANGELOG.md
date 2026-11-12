@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/mi-skam/sevdesk/compare/v0.3.0...v0.3.1) (2026-11-12)
+
+
+### Features
+
+* change filters and local SQLite database (land [#6](https://github.com/mi-skam/sevdesk/issues/6) and [#7](https://github.com/mi-skam/sevdesk/issues/7) on main) ([#11](https://github.com/mi-skam/sevdesk/issues/11)) ([f84d51f](https://github.com/mi-skam/sevdesk/commit/f84d51f9b67fd4f1ab57c910530e243d411c3134))
+
 ## [0.3.0](https://github.com/mi-skam/sevdesk/compare/v0.2.0...v0.3.0) (2026-11-12)
 
 
