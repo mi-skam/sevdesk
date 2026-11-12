@@ -44,7 +44,7 @@ describe('VouchersResource.list', () => {
 
     expect(lastRequest(fetch).url).toBe(
       `${BASE_URL}/Voucher?status=100&creditDebit=D&descriptionLike=RE-` +
-        '&startDate=01.01.2024&endDate=1719792000' +
+        '&startDate=1704063600&endDate=1719792000' +
         '&contact%5Bid%5D=42&contact%5BobjectName%5D=Contact' +
         '&limit=10&offset=20&embed=supplier%2CcostCentre',
     );

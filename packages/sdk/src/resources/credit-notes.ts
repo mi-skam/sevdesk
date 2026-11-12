@@ -1,4 +1,9 @@
-import { toIsoDateTime, toVoucherDate } from '../dates';
+import {
+  toFilterEnd,
+  toFilterStart,
+  toIsoDateTime,
+  toVoucherDate,
+} from '../dates';
 import { SevDeskError } from '../errors';
 import type {
   DateInput,
@@ -90,7 +95,16 @@ export interface SaveCreditNoteOptions {
 export interface ListCreditNotesOptions extends ListOptions {
   status?: CreditNoteStatus;
   creditNoteNumber?: string;
+  /**
+   * Only records whose `creditNoteDate` is at or after this moment. A calendar day
+   * (`dd.mm.yyyy` or `YYYY-MM-DD`) means midnight in German time; it is sent
+   * as Unix seconds because the API ignores `dd.mm.yyyy` in filters.
+   */
   startDate?: DateInput;
+  /**
+   * Only records whose `creditNoteDate` is at or before this moment. A calendar day
+   * includes the whole day in German time. Inclusive.
+   */
   endDate?: DateInput;
   contactId?: number;
   embed?: string[];
@@ -300,8 +314,9 @@ export class CreditNotesResource extends BaseResource {
       query: {
         status,
         creditNoteNumber,
-        startDate: toOptionalDate(startDate),
-        endDate: toOptionalDate(endDate),
+        startDate:
+          startDate === undefined ? undefined : toFilterStart(startDate),
+        endDate: endDate === undefined ? undefined : toFilterEnd(endDate),
         'contact[id]': contactId,
         'contact[objectName]': contactId === undefined ? undefined : 'Contact',
         limit,

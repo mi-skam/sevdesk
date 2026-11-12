@@ -90,8 +90,9 @@ describe('invoice commands', () => {
       expect(url).toContain('/Invoice?');
       expect(url).toContain('status=200');
       expect(url).toContain('invoiceNumber=RE-1');
-      expect(url).toContain('startDate=01.01.2024');
-      expect(url).toContain('endDate=31.01.2024');
+      // Calendar days are sent as Unix seconds in German time.
+      expect(url).toContain('startDate=1704063600');
+      expect(url).toContain('endDate=1706741999');
       expect(url).toContain('contact%5Bid%5D=7');
       expect(url).toContain('contact%5BobjectName%5D=Contact');
       expect(url).toContain('limit=1000');

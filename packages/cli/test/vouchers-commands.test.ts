@@ -131,6 +131,29 @@ describe('voucher commands', () => {
       expect(output).toContain('119.00');
     });
 
+    it('sends a date range as Unix seconds covering whole days in German time', async () => {
+      const fetchMock = stubFetch({ objects: [] });
+      await listCommand.action(
+        { startDate: '01.07.2026', endDate: '2026-07-31', json: true },
+        undefined,
+      );
+      const { url } = requestAt(fetchMock, 0);
+      expect(url).toContain(
+        `startDate=${Date.parse('2026-07-01T00:00:00+02:00') / 1000}`,
+      );
+      expect(url).toContain(
+        `endDate=${Date.parse('2026-08-01T00:00:00+02:00') / 1000 - 1}`,
+      );
+    });
+
+    it('rejects an unreadable date before sending a request', async () => {
+      const fetchMock = stubFetch({ objects: [] });
+      await expect(
+        listCommand.action({ startDate: 'last week', json: true }, undefined),
+      ).rejects.toThrow('Cannot read the date "last week"');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it('renders the service period as a single column', async () => {
       stubFetch({
         objects: [

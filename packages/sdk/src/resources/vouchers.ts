@@ -1,4 +1,10 @@
-import { changeFilterQuery, toIsoDateTime, toVoucherDate } from '../dates';
+import {
+  changeFilterQuery,
+  toFilterEnd,
+  toFilterStart,
+  toIsoDateTime,
+  toVoucherDate,
+} from '../dates';
 import { SevDeskError } from '../errors';
 import type {
   ChangeFilterOptions,
@@ -66,7 +72,16 @@ export interface ListVouchersOptions extends ListOptions, ChangeFilterOptions {
   status?: VoucherStatus;
   creditDebit?: 'C' | 'D';
   descriptionLike?: string;
+  /**
+   * Only records whose `voucherDate` is at or after this moment. A calendar day
+   * (`dd.mm.yyyy` or `YYYY-MM-DD`) means midnight in German time; it is sent
+   * as Unix seconds because the API ignores `dd.mm.yyyy` in filters.
+   */
   startDate?: DateInput;
+  /**
+   * Only records whose `voucherDate` is at or before this moment. A calendar day
+   * includes the whole day in German time. Exclusive for an instant: a voucher dated exactly at it is not returned.
+   */
   endDate?: DateInput;
   contactId?: number;
   /**
@@ -227,8 +242,9 @@ export class VouchersResource extends BaseResource {
         status,
         creditDebit,
         descriptionLike,
-        startDate: toOptionalVoucherDate(startDate),
-        endDate: toOptionalVoucherDate(endDate),
+        startDate:
+          startDate === undefined ? undefined : toFilterStart(startDate),
+        endDate: endDate === undefined ? undefined : toFilterEnd(endDate),
         'contact[id]': contactId,
         'contact[objectName]': contactId === undefined ? undefined : 'Contact',
         'object[id]': linkedObjectId,

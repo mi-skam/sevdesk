@@ -1,4 +1,9 @@
-import { changeFilterQuery, toVoucherDate } from '../dates';
+import {
+  changeFilterQuery,
+  toFilterEnd,
+  toFilterStart,
+  toVoucherDate,
+} from '../dates';
 import { SevDeskError } from '../errors';
 import type {
   ChangeFilterOptions,
@@ -91,7 +96,16 @@ export interface SaveOrderOptions {
 export interface ListOrdersOptions extends ListOptions, ChangeFilterOptions {
   status?: OrderStatus;
   orderNumber?: string;
+  /**
+   * Only records whose `orderDate` is at or after this moment. A calendar day
+   * (`dd.mm.yyyy` or `YYYY-MM-DD`) means midnight in German time; it is sent
+   * as Unix seconds because the API ignores `dd.mm.yyyy` in filters.
+   */
   startDate?: DateInput;
+  /**
+   * Only records whose `orderDate` is at or before this moment. A calendar day
+   * includes the whole day in German time. Inclusive.
+   */
   endDate?: DateInput;
   contactId?: number;
   embed?: string[];
@@ -306,8 +320,9 @@ export class OrdersResource extends BaseResource {
         ...changeFilterQuery(options),
         status,
         orderNumber,
-        startDate: toOptionalDate(startDate),
-        endDate: toOptionalDate(endDate),
+        startDate:
+          startDate === undefined ? undefined : toFilterStart(startDate),
+        endDate: endDate === undefined ? undefined : toFilterEnd(endDate),
         'contact[id]': contactId,
         'contact[objectName]': contactId === undefined ? undefined : 'Contact',
         limit,

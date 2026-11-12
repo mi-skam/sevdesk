@@ -45,13 +45,13 @@ export default defineCommand({
         .string()
         .optional()
         .describe(
-          'Only vouchers on or after this date as dd.mm.yyyy or Unix timestamp.',
+          'Only vouchers on or after this date: dd.mm.yyyy or YYYY-MM-DD (German time), Unix seconds or an ISO 8601 timestamp.',
         ),
       endDate: z
         .string()
         .optional()
         .describe(
-          'Only vouchers on or before this date as dd.mm.yyyy or Unix timestamp.',
+          'Only vouchers on or before this date, same formats. A date includes the whole day; an exact moment is exclusive.',
         ),
       contact: z.coerce
         .number()
