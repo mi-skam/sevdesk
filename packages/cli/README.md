@@ -9,6 +9,7 @@ Unofficial command-line interface for the [sevdesk](https://sevdesk.de/) API.[^1
 - 🏦 **Check accounts**: List accounts, query balances, and create clearing or file import accounts.
 - 🧭 **Receipt guidance**: Find bookable accounts and their allowed tax rules.
 - 📄 **Documents**: List invoices, credit notes and orders, and download them as PDF.
+- 🗄️ **Local database**: Copy the whole account into a local SQLite database with `db:sync`, incrementally where the API allows it, and keep records even after they are deleted in sevdesk.
 - 📤 **Exports**: Export accounting data in the DATEV format, or contacts, invoices, transactions and vouchers as CSV.
 - 🤖 **Automation-friendly**: `--json` output on every command, non-interactive mode, and stable exit codes.
 
@@ -77,6 +78,22 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 
 **Breaking syntax change:** Target `--id` flags, `contacts:add-* --contact`, and `vouchers:create --file` have been removed, without compatibility aliases. Update scripts to pass these values positionally. JSON output and confirmation requirements are unchanged.
 
+## Local database
+
+`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses and communication ways, invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, booking accounts, tags and parts. It only reads from sevdesk.
+
+- **Location**: `SEVDESK_DB`, otherwise `$XDG_DATA_HOME/sevdesk/sevdesk.db`, otherwise `~/.local/share/sevdesk/sevdesk.db`. The file is created with mode `0600` and contains your accounting data, so keep it out of repositories and backups you share.
+- **Incremental**: contacts, invoices, orders and vouchers are the only entities the API can filter by change time. After the first run they are fetched from one hour before the newest change already stored; everything else is fetched in full on every run.
+- **Deletions**: a full fetch marks records it no longer sees as deleted instead of removing them. Incremental fetches cannot see deletions, so those four entities are fetched in full again once a week, or whenever you pass `--full`.
+- **Atomic**: everything is fetched first and written in one transaction. A failed request leaves the database unchanged.
+- Requires Node.js 22.13 or later (built-in `node:sqlite`).
+
+```bash
+sevdesk db:sync          # first run: everything; later runs: only what changed
+sevdesk db:sync --full   # fetch everything and detect deletions
+sevdesk db:info          # path, size and record counts per entity
+```
+
 ## Scripting
 
 The CLI is designed to be scriptable:
@@ -96,6 +113,8 @@ sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 - [`login`](#login)
 - [`logout`](#logout)
 - [`doctor`](#doctor)
+- [`db:info`](#dbinfo)
+- [`db:sync`](#dbsync)
 - [`accounts-datev:get`](#accounts-datevget)
 - [`accounts-datev:list`](#accounts-datevlist)
 - [`accounts:balance`](#accountsbalance)
@@ -189,6 +208,31 @@ sevdesk doctor [options]
 **Options:**
 
 - `--json`: Output in JSON format.
+
+### `db:info`
+
+Show where the local database is, how many records it holds per entity and when each was last synced. Fails with a hint to run `db:sync` when there is no database yet.
+
+```bash
+sevdesk db:info [options]
+```
+
+**Options:**
+
+- `--json`: Output in JSON format.
+
+### `db:sync`
+
+Copy every record of the account into the [local database](#local-database). Contacts, invoices, orders and vouchers are fetched incrementally after the first run; everything else, and those four once a week, is fetched in full. Records deleted in sevdesk are kept and marked deleted. Entities the API token may not read (`403`) are skipped.
+
+```bash
+sevdesk db:sync [options]
+```
+
+**Options:**
+
+- `--full`: Fetch every entity in full, which also detects deletions of incrementally synced ones. Defaults to `false`.
+- `--json`: Output in JSON format: the database path, per entity the mode and the number of fetched, inserted, updated, unchanged and deleted records, the skipped entities and the number of requests.
 
 ### `accounts-datev:get`
 
