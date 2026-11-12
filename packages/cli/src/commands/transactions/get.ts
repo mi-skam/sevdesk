@@ -1,8 +1,10 @@
+import type { CheckAccountTransaction } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import { localOption, readLocalRecord } from '../../local';
 import { printJson } from '../../output';
 
 export default defineCommand({
@@ -14,17 +16,23 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
     const transactionId = await requireIdArgument({
       value: targetId,
       requirement: 'a transaction ID as a positional argument',
       question: 'Enter the transaction ID:',
     });
-    const transaction = await client.transactions.get({ transactionId });
+    const transaction = options.local
+      ? await readLocalRecord<CheckAccountTransaction>(
+          'transactions',
+          transactionId,
+          'Transaction',
+        )
+      : await (await requireClient()).transactions.get({ transactionId });
     if (options.json) {
       printJson(transaction);
       return;

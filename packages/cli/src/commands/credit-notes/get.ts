@@ -1,8 +1,10 @@
+import type { CreditNote } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import { localOption, readLocalRecord } from '../../local';
 import { contactLabel, printJson } from '../../output';
 
 export default defineCommand({
@@ -14,20 +16,28 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
     const creditNoteId = await requireIdArgument({
       value: targetId,
       requirement: 'a credit note ID as a positional argument',
       question: 'Enter the credit note ID:',
     });
-    const creditNote = await client.creditNotes.get({
-      creditNoteId,
-      embed: ['contact'],
-    });
+    const creditNote = options.local
+      ? await readLocalRecord<CreditNote>(
+          'credit-notes',
+          creditNoteId,
+          'Credit note',
+        )
+      : await (
+          await requireClient()
+        ).creditNotes.get({
+          creditNoteId,
+          embed: ['contact'],
+        });
     if (options.json) {
       printJson(creditNote);
       return;

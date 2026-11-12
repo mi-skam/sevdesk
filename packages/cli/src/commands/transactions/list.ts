@@ -1,7 +1,17 @@
+import type { CheckAccountTransaction } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { requireClient } from '../../client';
+import {
+  byDateDesc,
+  contains,
+  inDateRange,
+  localList,
+  localOption,
+  readLocal,
+  refersTo,
+} from '../../local';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -45,29 +55,54 @@ export default defineCommand({
         .number()
         .optional()
         .describe('The number of transactions to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
-    const transactions = await fetchAll(
-      (page) =>
-        client.transactions.list({
-          checkAccountId: options.checkAccount,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          payeePayerName: options.payee,
-          paymtPurpose: options.purpose,
-          ...page,
-        }),
-      {
-        limit: options.limit,
-        offset: options.offset,
-        keep: options.unbooked
-          ? (transaction) => transaction.status === '100'
-          : undefined,
-      },
-    );
+    let transactions: CheckAccountTransaction[];
+    if (options.local) {
+      transactions = localList(
+        await readLocal<CheckAccountTransaction>('transactions'),
+        {
+          where: (transaction) =>
+            refersTo(transaction.checkAccount, options.checkAccount) &&
+            inDateRange(
+              transaction.valueDate,
+              options.startDate,
+              options.endDate,
+            ) &&
+            contains(transaction.payeePayerName, options.payee) &&
+            contains(transaction.paymtPurpose, options.purpose),
+          keep: options.unbooked
+            ? (transaction) => transaction.status === '100'
+            : undefined,
+          sort: byDateDesc((transaction) => transaction.valueDate),
+          limit: options.limit,
+          offset: options.offset,
+        },
+      );
+    } else {
+      const client = await requireClient();
+      transactions = await fetchAll(
+        (page) =>
+          client.transactions.list({
+            checkAccountId: options.checkAccount,
+            startDate: options.startDate,
+            endDate: options.endDate,
+            payeePayerName: options.payee,
+            paymtPurpose: options.purpose,
+            ...page,
+          }),
+        {
+          limit: options.limit,
+          offset: options.offset,
+          keep: options.unbooked
+            ? (transaction) => transaction.status === '100'
+            : undefined,
+        },
+      );
+    }
     if (options.json) {
       printJson(transactions);
       return;

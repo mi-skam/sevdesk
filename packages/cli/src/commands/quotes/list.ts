@@ -1,8 +1,17 @@
-import type { OrderStatus } from '@mi-skam/sevdesk-sdk';
+import type { Order, OrderStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { requireClient } from '../../client';
+import {
+  byIdDesc,
+  collapseRef,
+  equals,
+  localList,
+  localOption,
+  readLocal,
+  refersToContact,
+} from '../../local';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -30,20 +39,33 @@ export default defineCommand({
         .positive()
         .optional()
         .describe('Maximum matching quotes.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Machine-readable output.'),
     }),
   ),
   action: async (o) => {
-    const client = await requireClient();
-    const quotes = await fetchAll(
-      (page) =>
-        client.orders.list({
-          contactId: o.contact,
-          status: o.status as OrderStatus | undefined,
-          ...page,
-        }),
-      { limit: o.limit, keep: (v) => v.orderType === 'AN' },
-    );
+    let quotes: Order[];
+    if (o.local) {
+      quotes = localList(await readLocal<Order>('orders'), {
+        where: (order) =>
+          refersToContact(order.contact, o.contact) &&
+          equals(order.status, o.status),
+        keep: (order) => order.orderType === 'AN',
+        sort: byIdDesc,
+        limit: o.limit,
+      }).map((order) => ({ ...order, contact: collapseRef(order.contact) }));
+    } else {
+      const client = await requireClient();
+      quotes = await fetchAll(
+        (page) =>
+          client.orders.list({
+            contactId: o.contact,
+            status: o.status as OrderStatus | undefined,
+            ...page,
+          }),
+        { limit: o.limit, keep: (v) => v.orderType === 'AN' },
+      );
+    }
     if (o.json) {
       printJson(quotes);
       return;

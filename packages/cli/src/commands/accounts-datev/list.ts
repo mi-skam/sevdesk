@@ -1,7 +1,15 @@
+import type { AccountDatev } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { requireClient } from '../../client';
+import {
+  byIdAsc,
+  compareText,
+  localList,
+  localOption,
+  readLocal,
+} from '../../local';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -32,24 +40,36 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of accounts to skip before filtering.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
     const needle = options.nameLike?.toLowerCase();
     const filtering = options.number !== undefined || needle !== undefined;
-    const accounts = await fetchAll((page) => client.accountsDatev.list(page), {
-      limit: options.limit,
-      offset: options.offset,
-      keep: filtering
-        ? (account) =>
-            (options.number === undefined ||
-              account.number === options.number) &&
-            (needle === undefined ||
-              (account.name ?? '').toLowerCase().includes(needle))
-        : undefined,
-    });
+    const keep = filtering
+      ? (account: AccountDatev) =>
+          (options.number === undefined || account.number === options.number) &&
+          (needle === undefined ||
+            (account.name ?? '').toLowerCase().includes(needle))
+      : undefined;
+    let accounts: AccountDatev[];
+    if (options.local) {
+      accounts = localList(await readLocal<AccountDatev>('accounts-datev'), {
+        // The API sorts by account number as text: 135, 1371, 140.
+        sort: (a, b) => compareText(a.number, b.number) || byIdAsc(a, b),
+        keep,
+        limit: options.limit,
+        offset: options.offset,
+      });
+    } else {
+      const client = await requireClient();
+      accounts = await fetchAll((page) => client.accountsDatev.list(page), {
+        limit: options.limit,
+        offset: options.offset,
+        keep,
+      });
+    }
     if (options.json) {
       printJson(accounts);
       return;

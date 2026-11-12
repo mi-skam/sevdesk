@@ -1,8 +1,17 @@
-import type { CreditNoteStatus } from '@mi-skam/sevdesk-sdk';
+import type { CreditNote, CreditNoteStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { requireClient } from '../../client';
+import {
+  byIdDesc,
+  equals,
+  inDateRange,
+  localList,
+  localOption,
+  readLocal,
+  refersToContact,
+} from '../../local';
 import { contactLabel, printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -46,24 +55,43 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of credit notes to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
-    const creditNotes = await fetchAll(
-      (page) =>
-        client.creditNotes.list({
-          status: options.status as CreditNoteStatus | undefined,
-          creditNoteNumber: options.creditNoteNumber,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          contactId: options.contact,
-          embed: ['contact'],
-          ...page,
-        }),
-      { limit: options.limit, offset: options.offset },
-    );
+    let creditNotes: CreditNote[];
+    if (options.local) {
+      creditNotes = localList(await readLocal<CreditNote>('credit-notes'), {
+        where: (creditNote) =>
+          equals(creditNote.status, options.status) &&
+          equals(creditNote.creditNoteNumber, options.creditNoteNumber) &&
+          inDateRange(
+            creditNote.creditNoteDate,
+            options.startDate,
+            options.endDate,
+          ) &&
+          refersToContact(creditNote.contact, options.contact),
+        sort: byIdDesc,
+        limit: options.limit,
+        offset: options.offset,
+      });
+    } else {
+      const client = await requireClient();
+      creditNotes = await fetchAll(
+        (page) =>
+          client.creditNotes.list({
+            status: options.status as CreditNoteStatus | undefined,
+            creditNoteNumber: options.creditNoteNumber,
+            startDate: options.startDate,
+            endDate: options.endDate,
+            contactId: options.contact,
+            embed: ['contact'],
+            ...page,
+          }),
+        { limit: options.limit, offset: options.offset },
+      );
+    }
     if (options.json) {
       printJson(creditNotes);
       return;

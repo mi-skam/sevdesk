@@ -1,9 +1,19 @@
-import type { InvoiceStatus } from '@mi-skam/sevdesk-sdk';
+import type { Invoice, InvoiceStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
+import {
+  byIdDesc,
+  equals,
+  inDateRange,
+  localList,
+  localOption,
+  matchesChangeFilters,
+  readLocal,
+  refersToContact,
+} from '../../local';
 import { contactLabel, printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -58,6 +68,7 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of invoices to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
@@ -71,28 +82,50 @@ export default defineCommand({
         '--drafts cannot be combined with a status other than 100.',
       );
     const status = options.drafts ? 100 : options.status;
-    const client = await requireClient();
-    const invoices = await fetchAll(
-      (page) =>
-        client.invoices.list({
-          status: status as InvoiceStatus | undefined,
-          invoiceNumber: options.invoiceNumber,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          contactId: options.contact,
-          embed: ['contact'],
-          ...changeFilters(options),
-          ...page,
-        }),
-      {
+    let invoices: Invoice[];
+    if (options.local) {
+      invoices = localList(await readLocal<Invoice>('invoices'), {
+        // Without showAll the API hides reminders (MA) and recurring invoices (WKR).
+        where: (invoice) =>
+          invoice.invoiceType !== 'MA' &&
+          invoice.invoiceType !== 'WKR' &&
+          equals(invoice.status, status) &&
+          equals(invoice.invoiceNumber, options.invoiceNumber) &&
+          inDateRange(
+            invoice.invoiceDate,
+            options.startDate,
+            options.endDate,
+          ) &&
+          refersToContact(invoice.contact, options.contact) &&
+          matchesChangeFilters(invoice, options),
+        sort: byIdDesc,
         limit: options.limit,
         offset: options.offset,
-        keep:
-          status === undefined
-            ? undefined
-            : (invoice) => invoice.status === String(status),
-      },
-    );
+      });
+    } else {
+      const client = await requireClient();
+      invoices = await fetchAll(
+        (page) =>
+          client.invoices.list({
+            status: status as InvoiceStatus | undefined,
+            invoiceNumber: options.invoiceNumber,
+            startDate: options.startDate,
+            endDate: options.endDate,
+            contactId: options.contact,
+            embed: ['contact'],
+            ...changeFilters(options),
+            ...page,
+          }),
+        {
+          limit: options.limit,
+          offset: options.offset,
+          keep:
+            status === undefined
+              ? undefined
+              : (invoice) => invoice.status === String(status),
+        },
+      );
+    }
     const drafts = new Map<string, string[]>();
     for (const invoice of invoices) {
       if (invoice.status !== '100' || !invoice.invoiceNumber) continue;

@@ -1,8 +1,17 @@
+import type { Order, OrderPosition } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import {
+  byIdAsc,
+  localList,
+  localOption,
+  readLocal,
+  readLocalRecord,
+  refersTo,
+} from '../../local';
 import { printJson } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -16,23 +25,28 @@ export default defineCommand({
         .boolean()
         .default(false)
         .describe('Include all positions (Positionen).'),
+      ...localOption,
       json: z.boolean().default(false).describe('Machine-readable output.'),
     }),
   ),
   action: async (o, [id]) => {
-    const client = await requireClient();
-    const quote = await client.orders.get({
-      orderId: id,
-      embed: ['contact'],
-    });
+    const client = o.local ? undefined : await requireClient();
+    const quote = client
+      ? await client.orders.get({ orderId: id, embed: ['contact'] })
+      : await readLocalRecord<Order>('orders', id, 'Quote');
     if (quote.orderType !== 'AN')
       throw new Error('The selected document is not a quote (Angebot).');
     const result = o.positions
       ? {
           quote,
-          positions: await fetchAll((page) =>
-            client.orders.listPositions({ orderId: id, ...page }),
-          ),
+          positions: client
+            ? await fetchAll((page) =>
+                client.orders.listPositions({ orderId: id, ...page }),
+              )
+            : localList(await readLocal<OrderPosition>('order-positions'), {
+                where: (position) => refersTo(position.order, id),
+                sort: byIdAsc,
+              }),
         }
       : quote;
     if (o.json) printJson(result);
