@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.0](https://github.com/mi-skam/sevdesk/compare/v0.3.2...v0.4.0) (2026-11-12)
+
+
+### Features
+
+* **cli:** read from the local database with --local ([#14](https://github.com/mi-skam/sevdesk/issues/14)) ([90768d3](https://github.com/mi-skam/sevdesk/commit/90768d33766744f273e0edb5fa1dbb5e0377071b))
+
+
+### Bug Fixes
+
+* **sdk:** type invoice render results as a full Base64 PDF ([#17](https://github.com/mi-skam/sevdesk/issues/17)) ([129529a](https://github.com/mi-skam/sevdesk/commit/129529a6247e3921fe3bca09b358ea6dbcba1f05))
+
+
+### Documentation
+
+* add an OpenAPI overlay with verified corrections to the sevdesk spec ([#20](https://github.com/mi-skam/sevdesk/issues/20)) ([9b927fa](https://github.com/mi-skam/sevdesk/commit/9b927fa1c85eb4e9130496728c81c13698f2970b))
+
+
+### Miscellaneous Chores
+
+* release 0.4.0 ([9f4daf1](https://github.com/mi-skam/sevdesk/commit/9f4daf1ea7f6ecad08424aa3257ed65bbc806b23))
+
 ## [0.3.2](https://github.com/mi-skam/sevdesk/compare/v0.3.1...v0.3.2) (2026-11-12)
 
 
