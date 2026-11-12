@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/mi-skam/sevdesk/compare/v0.3.1...v0.3.2) (2026-11-12)
+
+
+### Miscellaneous Chores
+
+* release 0.3.2 ([f8922a2](https://github.com/mi-skam/sevdesk/commit/f8922a28cedaf39c1d160b43045c6b071f7a66bf))
+
 ## [0.3.1](https://github.com/mi-skam/sevdesk/compare/v0.3.0...v0.3.1) (2026-11-12)
 
 
