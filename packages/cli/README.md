@@ -424,6 +424,10 @@ sevdesk contacts:list [options]
 - `--customer-number`: Filter by customer number.
 - `--depth`: Contact depth: `0` returns only organizations, `1` organizations and persons. Defaults to `0`.
 - `--category`: ID of the contact category to filter by: `2` supplier, `3` customer, `4` partner.
+- `--created-after`: Only contacts created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only contacts created at or before this moment. Same formats.
+- `--updated-after`: Only contacts last changed at or after this moment. Same formats.
+- `--updated-before`: Only contacts last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of contacts to return. Defaults to all of them.
 - `--offset`: Number of contacts to skip.
 - `--json`: Output in JSON format.
@@ -827,6 +831,10 @@ sevdesk invoices:list [options]
 - `--start-date`: Only invoices on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only invoices on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose invoices to list.
+- `--created-after`: Only invoices created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only invoices created at or before this moment. Same formats.
+- `--updated-after`: Only invoices last changed at or after this moment. Same formats.
+- `--updated-before`: Only invoices last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of invoices to return. Defaults to all of them.
 - `--offset`: Number of invoices to skip.
 - `--json`: Output in JSON format.
@@ -906,6 +914,10 @@ sevdesk orders:list [options]
 - `--start-date`: Only orders on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only orders on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose orders to list.
+- `--created-after`: Only orders created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only orders created at or before this moment. Same formats.
+- `--updated-after`: Only orders last changed at or after this moment. Same formats.
+- `--updated-before`: Only orders last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of orders to return. Defaults to all of them.
 - `--offset`: Number of orders to skip.
 - `--json`: Output in JSON format.
@@ -1255,6 +1267,10 @@ sevdesk vouchers:list [options]
 - `--start-date`: Only vouchers on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only vouchers on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose vouchers to list.
+- `--created-after`: Only vouchers created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only vouchers created at or before this moment. Same formats.
+- `--updated-after`: Only vouchers last changed at or after this moment. Same formats.
+- `--updated-before`: Only vouchers last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of vouchers to return. Defaults to all of them.
 - `--offset`: Number of vouchers to skip.
 - `--json`: Output in JSON format.

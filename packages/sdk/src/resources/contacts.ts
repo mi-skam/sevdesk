@@ -1,11 +1,17 @@
+import { changeFilterQuery } from '../dates';
 import { SevDeskError } from '../errors';
-import type { ListOptions, ModelRef, ModelRefResponse } from '../types';
+import type {
+  ChangeFilterOptions,
+  ListOptions,
+  ModelRef,
+  ModelRefResponse,
+} from '../types';
 import { BaseResource } from './base';
 
 /** `100` for a lead, `500` for a pending and `1000` for an active contact. */
 export type ContactStatus = 100 | 500 | 1000;
 
-export interface ListContactsOptions extends ListOptions {
+export interface ListContactsOptions extends ListOptions, ChangeFilterOptions {
   /**
    * `'0'` returns only organizations, `'1'` organizations and persons.
    * Defaults to `'0'`.
@@ -138,6 +144,7 @@ export class ContactsResource extends BaseResource {
       method: 'GET',
       path: '/Contact',
       query: {
+        ...changeFilterQuery(options),
         depth,
         customerNumber,
         name,

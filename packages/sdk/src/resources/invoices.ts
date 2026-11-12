@@ -1,6 +1,7 @@
-import { toIsoDateTime, toVoucherDate } from '../dates';
+import { changeFilterQuery, toIsoDateTime, toVoucherDate } from '../dates';
 import { SevDeskError } from '../errors';
 import type {
+  ChangeFilterOptions,
   DateInput,
   ListOptions,
   ModelRef,
@@ -116,7 +117,7 @@ export interface SaveInvoiceOptions {
   takeDefaultAddress?: boolean;
 }
 
-export interface ListInvoicesOptions extends ListOptions {
+export interface ListInvoicesOptions extends ListOptions, ChangeFilterOptions {
   /** Includes all invoice types, including recurring and reminder records. */
   showAll?: boolean;
   status?: InvoiceStatus;
@@ -334,6 +335,7 @@ export class InvoicesResource extends BaseResource {
       method: 'GET',
       path: '/Invoice',
       query: {
+        ...changeFilterQuery(options),
         showAll,
         status,
         invoiceNumber,
