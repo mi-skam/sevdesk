@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/mi-skam/sevdesk/compare/v0.4.0...v0.4.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* send document-date filters as Unix seconds so dd.mm.yyyy works ([#22](https://github.com/mi-skam/sevdesk/issues/22)) ([b9f92b7](https://github.com/mi-skam/sevdesk/commit/b9f92b7ea8a4b08a6e2848e7b04d96290f231fc2))
+
 ## [0.4.0](https://github.com/mi-skam/sevdesk/compare/v0.3.2...v0.4.0) (2026-11-12)
 
 
