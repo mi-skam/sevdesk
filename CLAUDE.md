@@ -40,7 +40,7 @@ Zero runtime dependencies, native `fetch`, ESM only.
 - `src/http-client.ts` — the only place that talks to the network. Owns auth (raw token in `Authorization`, no `Bearer`), timeouts via `AbortSignal.timeout`, retries (GET/PUT/DELETE only, on network errors + 429/5xx, honoring `Retry-After`), query serialization (`booleans → 1/0`, arrays → comma-joined) and unwrapping of the sevdesk `{ objects: … }` envelope. `request<T>()` returns the unwrapped payload; empty bodies return `undefined`.
 - `src/resources/*.ts` — one class per API area, each extending `BaseResource` and receiving the shared `HttpClient`. `SevDesk` in `src/client.ts` instantiates all of them as readonly properties.
 - `src/types.ts` — shared `DateInput`, `ListOptions`, `ModelRef` (requests, numeric id) vs `ModelRefResponse` (responses, string id).
-- `src/dates.ts` — three serializers because endpoints disagree: `toVoucherDate` (`dd.mm.yyyy` or Unix seconds), `toIsoDateTime`, `toPlainDate`.
+- `src/dates.ts` — serializers because endpoints disagree: `toVoucherDate` (`dd.mm.yyyy` or Unix seconds, for request bodies), `toIsoDateTime`, `toPlainDate`, and `toFilterStart`/`toFilterEnd` for the `startDate`/`endDate` list filters of Voucher, Invoice, Order and CreditNote. Those filters accept a `dd.mm.yyyy` string but ignore it (start matches everything, end nothing), so the filter serializers always send Unix seconds: a calendar day becomes midnight / the last second of that day in Europe/Berlin, the zone sevdesk stores document dates in, which also makes the exclusive voucher `endDate` include the whole day. Unreadable strings throw before any request.
 - `src/index.ts` re-exports everything; new resources must be added there.
 
 ### `packages/cli` — `@mi-skam/sevdesk` (bin `sevdesk`)

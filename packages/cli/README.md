@@ -585,8 +585,8 @@ sevdesk credit-notes:list [options]
 
 - `--status`: Filter by status: `100` draft, `200` open, `750` partially paid, `1000` paid.
 - `--credit-note-number`: Filter by credit note number.
-- `--start-date`: Only credit notes on or after this date as `dd.mm.yyyy` or Unix timestamp.
-- `--end-date`: Only credit notes on or before this date as `dd.mm.yyyy` or Unix timestamp.
+- `--start-date`: Only credit notes on or after this date: `dd.mm.yyyy` or `YYYY-MM-DD` (German time), Unix seconds or an ISO 8601 timestamp.
+- `--end-date`: Only credit notes on or before this date, same formats. A date includes the whole day.
 - `--contact`: ID of the contact whose credit notes to list.
 - `--limit`: Maximum number of credit notes to return. Defaults to all of them.
 - `--offset`: Number of credit notes to skip.
@@ -916,8 +916,8 @@ sevdesk invoices:list [options]
 - `--status`: Filter by status: `50` deactivated recurring, `100` draft, `200` open, `750` partially paid, `1000` paid. Also enforced client-side before applying `--limit`.
 - `--drafts`: Shortcut for `--status 100`; conflicts with any other status. With `--json`, always return `{ invoices, warnings }`.
 - `--invoice-number`: Filter by invoice number.
-- `--start-date`: Only invoices on or after this date as `dd.mm.yyyy` or Unix timestamp.
-- `--end-date`: Only invoices on or before this date as `dd.mm.yyyy` or Unix timestamp.
+- `--start-date`: Only invoices on or after this date: `dd.mm.yyyy` or `YYYY-MM-DD` (German time), Unix seconds or an ISO 8601 timestamp.
+- `--end-date`: Only invoices on or before this date, same formats. A date includes the whole day.
 - `--contact`: ID of the contact whose invoices to list.
 - `--created-after`: Only invoices created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
 - `--created-before`: Only invoices created at or before this moment. Same formats.
@@ -1001,8 +1001,8 @@ sevdesk orders:list [options]
 
 - `--status`: Filter by status: `100` draft, `200` delivered, `300` rejected, `500` accepted, `750` partially calculated, `1000` calculated.
 - `--order-number`: Filter by order number.
-- `--start-date`: Only orders on or after this date as `dd.mm.yyyy` or Unix timestamp.
-- `--end-date`: Only orders on or before this date as `dd.mm.yyyy` or Unix timestamp.
+- `--start-date`: Only orders on or after this date: `dd.mm.yyyy` or `YYYY-MM-DD` (German time), Unix seconds or an ISO 8601 timestamp.
+- `--end-date`: Only orders on or before this date, same formats. A date includes the whole day.
 - `--contact`: ID of the contact whose orders to list.
 - `--created-after`: Only orders created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
 - `--created-before`: Only orders created at or before this moment. Same formats.
@@ -1361,8 +1361,8 @@ sevdesk vouchers:list [options]
 - `--status`: Filter by status: `50` draft, `100` open, `150` transferred, `750` partially paid, `1000` paid.
 - `--credit-debit`: Filter by `C` for expense or `D` for income vouchers.
 - `--description-like`: Filter by voucher number, matching partially.
-- `--start-date`: Only vouchers on or after this date as `dd.mm.yyyy` or Unix timestamp.
-- `--end-date`: Only vouchers on or before this date as `dd.mm.yyyy` or Unix timestamp.
+- `--start-date`: Only vouchers on or after this date: `dd.mm.yyyy` or `YYYY-MM-DD` (German time), Unix seconds or an ISO 8601 timestamp.
+- `--end-date`: Only vouchers on or before this date, same formats. A date includes the whole day; an exact moment is exclusive.
 - `--contact`: ID of the contact whose vouchers to list.
 - `--created-after`: Only vouchers created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
 - `--created-before`: Only vouchers created at or before this moment. Same formats.

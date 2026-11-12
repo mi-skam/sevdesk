@@ -44,7 +44,7 @@ describe('OrdersResource.list', () => {
 
     expect(lastRequest(fetch).url).toBe(
       `${BASE_URL}/Order?status=500&orderNumber=AN-1000` +
-        '&startDate=01.01.2024&endDate=1719792000' +
+        '&startDate=1704063600&endDate=1719792000' +
         '&contact%5Bid%5D=42&contact%5BobjectName%5D=Contact' +
         '&limit=10&offset=20&embed=contact%2CcontactPerson',
     );

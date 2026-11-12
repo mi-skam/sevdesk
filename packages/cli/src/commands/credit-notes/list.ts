@@ -33,13 +33,13 @@ export default defineCommand({
         .string()
         .optional()
         .describe(
-          'Only credit notes on or after this date as dd.mm.yyyy or Unix timestamp.',
+          'Only credit notes on or after this date: dd.mm.yyyy or YYYY-MM-DD (German time), Unix seconds or an ISO 8601 timestamp.',
         ),
       endDate: z
         .string()
         .optional()
         .describe(
-          'Only credit notes on or before this date as dd.mm.yyyy or Unix timestamp.',
+          'Only credit notes on or before this date, same formats. A date includes the whole day.',
         ),
       contact: z.coerce
         .number()
