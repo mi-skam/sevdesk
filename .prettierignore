@@ -5,3 +5,5 @@ openapi.yaml
 # Local task brief contains live account data; never publish or format it.
 /sevdesk-cli-invoice-workflows.md
 CHANGELOG.md
+# Written by release-please in its own (compact) style.
+.release-please-manifest.json
