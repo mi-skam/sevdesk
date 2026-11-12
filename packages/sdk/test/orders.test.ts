@@ -458,3 +458,21 @@ describe('OrdersResource positions', () => {
     expect(init.method).toBe('DELETE');
   });
 });
+
+describe('OrdersResource.list change filters', () => {
+  it('sends create and update filters as Unix seconds', async () => {
+    const fetch = createMockFetch({ objects: [] });
+
+    await createResource(fetch).list({
+      createAfter: new Date('2026-01-01T00:00:00Z'),
+      createBefore: 1767312000,
+      updateAfter: new Date('2026-01-03T00:00:30.900Z'),
+      updateBefore: '1767484800',
+    });
+
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/Order?createAfter=1767225600&createBefore=1767312000` +
+        '&updateAfter=1767398430&updateBefore=1767484800',
+    );
+  });
+});

@@ -2,6 +2,7 @@ import type { Contact } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
@@ -30,6 +31,7 @@ export default defineCommand({
         .describe(
           'ID of the contact category to filter by: 2 supplier, 3 customer, 4 partner.',
         ),
+      ...changeFilterOptions('contacts'),
       limit: z.coerce
         .number()
         .optional()
@@ -52,6 +54,7 @@ export default defineCommand({
           customerNumber: options.customerNumber,
           depth: toDepth(options.depth),
           categoryId: options.category,
+          ...changeFilters(options),
           ...page,
         }),
       { limit: options.limit, offset: options.offset },

@@ -2,6 +2,7 @@ import type { VoucherStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
 import {
   contactLabel,
@@ -45,6 +46,7 @@ export default defineCommand({
         .number()
         .optional()
         .describe('ID of the contact whose vouchers to list.'),
+      ...changeFilterOptions('vouchers'),
       limit: z.coerce
         .number()
         .optional()
@@ -70,6 +72,7 @@ export default defineCommand({
           endDate: options.endDate,
           contactId: options.contact,
           embed: ['supplier'],
+          ...changeFilters(options),
           ...page,
         }),
       { limit: options.limit, offset: options.offset },
