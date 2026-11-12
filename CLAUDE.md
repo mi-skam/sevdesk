@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The CLI runs against a real sevdesk account.
 
-- Read-only commands (`*:list`, `*:get`, `accounts:balance`, `guidance:accounts`, `doctor`, `export:*`) may be run freely.
+- Read-only commands (`*:list`, `*:get`, `accounts:balance`, `guidance:accounts`, `doctor`, `export:*`, `db:info`) may be run freely.
+- `db:sync` only reads from the API but writes real account data into a local SQLite file. When trying it, point `SEVDESK_DB` at a scratch path outside the repo rather than the user's default database, unless asked otherwise. Never commit a database file.
 - **Never run a command that writes** — `*:create*`, `*:update`, `*:delete`, `vouchers:book`, `vouchers:enshrine`, `vouchers:reset-to-*`, `login`, `logout` — without asking first and getting an explicit yes for that specific run. Enshrining cannot be undone.
 - **Never read, print or copy the API token.** Do not open `~/.config/sevdesk/config.json` and do not echo `SEVDESK_TOKEN`. Touch the account only through the CLI.
 
@@ -52,6 +53,8 @@ Built on `zodline` + `zod` + `consola`.
 - `src/config.ts` — token resolution order: `SEVDESK_TOKEN` env var → `~/.config/sevdesk/config.json` (respects `XDG_CONFIG_HOME`, written with mode `0600`). No OS keyring.
 - `src/options.ts` / `src/prompt.ts` / `src/interactive.ts` — `requireStringOption`/`requireNumberOption`/`confirmOrAbort` prompt when interactive and exit 1 with an explanatory message when not. Non-interactive = no TTY or `CI` set.
 - `src/output.ts` — `printJson`, `printTable`, `contactLabel`.
+- `src/store.ts` — the local SQLite database via built-in `node:sqlite` (Node ≥ 22.13), loaded lazily with its experimental warning suppressed. Path: `SEVDESK_DB` → `$XDG_DATA_HOME/sevdesk/sevdesk.db` → `~/.local/share/sevdesk/sevdesk.db`, mode `0600`. One generic `records` table keyed `(entity, id)` stores each API object unchanged in `data`, plus `updated_at`/`created_at` (normalized `toISOString()`, so text order is time order) and `deleted_at`. Schema version in `PRAGMA user_version`; `MIGRATIONS[n]` upgrades version `n` to `n + 1` inside one transaction, so a schema change is a new array entry, never an edit of an old one. Read commands open it with `create: false` and fail with a hint to run `db:sync`.
+- `src/sync.ts` — `ENTITIES` lists every synced entity with the embeds the list/get commands use, so local data equals live output. `syncStore` fetches everything first, then writes in one transaction. Entities with an `updateAfter` filter (contacts, invoices, orders, vouchers) are incremental from `watermark − 1 h` (per entity in `sync_state`), with a full fetch at least weekly or on `--full`; all others are fetched in full every run. Only full fetches mark unseen records deleted; records are never removed. `403` skips an entity.
 - `src/errors.ts` — maps `ZodlineError`, `ZodError` and `SevDeskError` (401 → "run `sevdesk login`") to user-facing strings.
 
 ## Conventions
@@ -70,6 +73,7 @@ Built on `zodline` + `zod` + `consola`.
 - List endpoints default to `limit=100` when no limit is sent, which silently truncates. CLI list commands therefore page through `fetchAll` (`packages/cli/src/pagination.ts`) instead of issuing a single request; it stops on an empty page, not a short one, so a server-side cap cannot truncate either. SDK `list` methods stay 1:1 with the endpoint and do not paginate.
 - `GET /CheckAccountTransaction` ignores `isBooked=false`; `transactions:list --unbooked` filters client-side on `status === '100'`. Client-side filters make `fetchAll` request full pages so `--limit` still returns the requested number of rows.
 - `/AccountDatev` is **undocumented**. `list` returns only non-hidden accounts and ignores every filter except `limit`/`offset`; `get` reaches hidden accounts. The documented alternative, `ReceiptGuidanceResource`, only covers the VAT-relevant subset.
+- `GET /Voucher`, `/Invoice`, `/Order` and `/Contact` accept `createAfter`/`createBefore`/`updateAfter`/`updateBefore` (documented only in the spec's prose). Verified live: Unix seconds work, and the bounds are **inclusive** (`>=`/`<=`) despite the names. No other list endpoint has a change filter.
 - Payment links between vouchers and transactions are not exposed by any endpoint (`object[]` filter and CSV export both verified). Do not add lookups that pretend otherwise.
 - `PUT` with `mapAll: true` is a genuine partial update: fields left out of the body keep their stored value. Verified live on `/ContactAddress` by updating only `street` and reading `zip`, `city`, `country` and `category` back unchanged, so update commands can send bare partials instead of read-modify-write.
 - `VoucherPos.accountDatev` is `null` for legacy bookkeeping-1.0 positions, which carry `accountingType` instead.
@@ -78,9 +82,9 @@ Built on `zodline` + `zod` + `consola`.
 
 ## Testing
 
-Vitest, no network. SDK tests build a resource on an `HttpClient` with a mocked `fetch` (`test/helpers.ts`: `createMockFetch`, `createHttpClient`, `lastRequest`) and assert on the exact request URL and JSON body. CLI tests import the command module directly, `vi.stubGlobal('fetch', …)`, mock `../src/interactive` and `../src/prompt`, and assert on requests plus `process.exit` behavior. Add tests alongside every new resource method and command.
+Vitest, no network. SDK tests build a resource on an `HttpClient` with a mocked `fetch` (`test/helpers.ts`: `createMockFetch`, `createHttpClient`, `lastRequest`) and assert on the exact request URL and JSON body. CLI tests import the command module directly, `vi.stubGlobal('fetch', …)`, mock `../src/interactive` and `../src/prompt`, and assert on requests plus `process.exit` behavior. Database tests set `SEVDESK_DB` (or pass `path`) to a file in a fresh `mkdtemp` directory. Add tests alongside every new resource method and command.
 
-**Fixtures are always invented, never real.** Never paste a live API response into a test, a doc or a commit — no real ids, names, IBANs, amounts, purposes or account numbers from an actual sevdesk account. Make fixtures obviously fake (`ACME`, `RE-1`, published test IBANs) and keep any live output you capture while debugging outside the repo.
+**Fixtures are always invented, never real.** Never paste a live API response into a test, a doc or a commit — no real ids, names, IBANs, amounts, purposes or account numbers from an actual sevdesk account. Never commit a database file. Make fixtures obviously fake (`ACME`, `RE-1`, published test IBANs) and keep any live output you capture while debugging outside the repo.
 
 ## Releases
 

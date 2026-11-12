@@ -21,6 +21,8 @@ import contactsUpdateAddress from './commands/contacts/update-address';
 import creditNotesGet from './commands/credit-notes/get';
 import creditNotesList from './commands/credit-notes/list';
 import creditNotesPdf from './commands/credit-notes/pdf';
+import dbInfo from './commands/db/info';
+import dbSync from './commands/db/sync';
 import doctor from './commands/doctor';
 import exportContacts from './commands/export/contacts';
 import exportDatev from './commands/export/datev';
@@ -78,6 +80,8 @@ const config = defineConfig({
     login,
     logout,
     doctor,
+    'db:info': dbInfo,
+    'db:sync': dbSync,
     'accounts-datev:get': accountsDatevGet,
     'accounts-datev:list': accountsDatevList,
     'accounts:balance': accountsBalance,

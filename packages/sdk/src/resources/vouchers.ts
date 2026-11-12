@@ -1,6 +1,7 @@
-import { toIsoDateTime, toVoucherDate } from '../dates';
+import { changeFilterQuery, toIsoDateTime, toVoucherDate } from '../dates';
 import { SevDeskError } from '../errors';
 import type {
+  ChangeFilterOptions,
   DateInput,
   ListOptions,
   ModelRef,
@@ -61,7 +62,7 @@ export interface SaveVoucherOptions {
   filename?: string;
 }
 
-export interface ListVouchersOptions extends ListOptions {
+export interface ListVouchersOptions extends ListOptions, ChangeFilterOptions {
   status?: VoucherStatus;
   creditDebit?: 'C' | 'D';
   descriptionLike?: string;
@@ -222,6 +223,7 @@ export class VouchersResource extends BaseResource {
       method: 'GET',
       path: '/Voucher',
       query: {
+        ...changeFilterQuery(options),
         status,
         creditDebit,
         descriptionLike,

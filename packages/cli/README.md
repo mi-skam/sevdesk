@@ -9,6 +9,7 @@ Unofficial command-line interface for the [sevdesk](https://sevdesk.de/) API.[^1
 - 🏦 **Check accounts**: List accounts, query balances, and create clearing or file import accounts.
 - 🧭 **Receipt guidance**: Find bookable accounts and their allowed tax rules.
 - 📄 **Documents**: List invoices, credit notes and orders, and download them as PDF.
+- 🗄️ **Local database**: Copy the whole account into a local SQLite database with `db:sync`, incrementally where the API allows it, and keep records even after they are deleted in sevdesk.
 - 📤 **Exports**: Export accounting data in the DATEV format, or contacts, invoices, transactions and vouchers as CSV.
 - 🤖 **Automation-friendly**: `--json` output on every command, non-interactive mode, and stable exit codes.
 
@@ -77,6 +78,22 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 
 **Breaking syntax change:** Target `--id` flags, `contacts:add-* --contact`, and `vouchers:create --file` have been removed, without compatibility aliases. Update scripts to pass these values positionally. JSON output and confirmation requirements are unchanged.
 
+## Local database
+
+`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses and communication ways, invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, booking accounts, tags and parts. It only reads from sevdesk.
+
+- **Location**: `SEVDESK_DB`, otherwise `$XDG_DATA_HOME/sevdesk/sevdesk.db`, otherwise `~/.local/share/sevdesk/sevdesk.db`. The file is created with mode `0600` and contains your accounting data, so keep it out of repositories and backups you share.
+- **Incremental**: contacts, invoices, orders and vouchers are the only entities the API can filter by change time. After the first run they are fetched from one hour before the newest change already stored; everything else is fetched in full on every run.
+- **Deletions**: a full fetch marks records it no longer sees as deleted instead of removing them. Incremental fetches cannot see deletions, so those four entities are fetched in full again once a week, or whenever you pass `--full`.
+- **Atomic**: everything is fetched first and written in one transaction. A failed request leaves the database unchanged.
+- Requires Node.js 22.13 or later (built-in `node:sqlite`).
+
+```bash
+sevdesk db:sync          # first run: everything; later runs: only what changed
+sevdesk db:sync --full   # fetch everything and detect deletions
+sevdesk db:info          # path, size and record counts per entity
+```
+
 ## Scripting
 
 The CLI is designed to be scriptable:
@@ -96,6 +113,8 @@ sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 - [`login`](#login)
 - [`logout`](#logout)
 - [`doctor`](#doctor)
+- [`db:info`](#dbinfo)
+- [`db:sync`](#dbsync)
 - [`accounts-datev:get`](#accounts-datevget)
 - [`accounts-datev:list`](#accounts-datevlist)
 - [`accounts:balance`](#accountsbalance)
@@ -189,6 +208,31 @@ sevdesk doctor [options]
 **Options:**
 
 - `--json`: Output in JSON format.
+
+### `db:info`
+
+Show where the local database is, how many records it holds per entity and when each was last synced. Fails with a hint to run `db:sync` when there is no database yet.
+
+```bash
+sevdesk db:info [options]
+```
+
+**Options:**
+
+- `--json`: Output in JSON format.
+
+### `db:sync`
+
+Copy every record of the account into the [local database](#local-database). Contacts, invoices, orders and vouchers are fetched incrementally after the first run; everything else, and those four once a week, is fetched in full. Records deleted in sevdesk are kept and marked deleted. Entities the API token may not read (`403`) are skipped.
+
+```bash
+sevdesk db:sync [options]
+```
+
+**Options:**
+
+- `--full`: Fetch every entity in full, which also detects deletions of incrementally synced ones. Defaults to `false`.
+- `--json`: Output in JSON format: the database path, per entity the mode and the number of fetched, inserted, updated, unchanged and deleted records, the skipped entities and the number of requests.
 
 ### `accounts-datev:get`
 
@@ -424,6 +468,10 @@ sevdesk contacts:list [options]
 - `--customer-number`: Filter by customer number.
 - `--depth`: Contact depth: `0` returns only organizations, `1` organizations and persons. Defaults to `0`.
 - `--category`: ID of the contact category to filter by: `2` supplier, `3` customer, `4` partner.
+- `--created-after`: Only contacts created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only contacts created at or before this moment. Same formats.
+- `--updated-after`: Only contacts last changed at or after this moment. Same formats.
+- `--updated-before`: Only contacts last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of contacts to return. Defaults to all of them.
 - `--offset`: Number of contacts to skip.
 - `--json`: Output in JSON format.
@@ -827,6 +875,10 @@ sevdesk invoices:list [options]
 - `--start-date`: Only invoices on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only invoices on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose invoices to list.
+- `--created-after`: Only invoices created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only invoices created at or before this moment. Same formats.
+- `--updated-after`: Only invoices last changed at or after this moment. Same formats.
+- `--updated-before`: Only invoices last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of invoices to return. Defaults to all of them.
 - `--offset`: Number of invoices to skip.
 - `--json`: Output in JSON format.
@@ -906,6 +958,10 @@ sevdesk orders:list [options]
 - `--start-date`: Only orders on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only orders on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose orders to list.
+- `--created-after`: Only orders created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only orders created at or before this moment. Same formats.
+- `--updated-after`: Only orders last changed at or after this moment. Same formats.
+- `--updated-before`: Only orders last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of orders to return. Defaults to all of them.
 - `--offset`: Number of orders to skip.
 - `--json`: Output in JSON format.
@@ -1255,6 +1311,10 @@ sevdesk vouchers:list [options]
 - `--start-date`: Only vouchers on or after this date as `dd.mm.yyyy` or Unix timestamp.
 - `--end-date`: Only vouchers on or before this date as `dd.mm.yyyy` or Unix timestamp.
 - `--contact`: ID of the contact whose vouchers to list.
+- `--created-after`: Only vouchers created at or after this moment: Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--created-before`: Only vouchers created at or before this moment. Same formats.
+- `--updated-after`: Only vouchers last changed at or after this moment. Same formats.
+- `--updated-before`: Only vouchers last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of vouchers to return. Defaults to all of them.
 - `--offset`: Number of vouchers to skip.
 - `--json`: Output in JSON format.

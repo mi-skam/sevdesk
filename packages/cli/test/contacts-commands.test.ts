@@ -121,6 +121,21 @@ describe('contact commands', () => {
     expect(info).toHaveBeenCalledWith('No contacts found.');
   });
 
+  it('filters contacts by when they last changed', async () => {
+    respondWith([contact]);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await list.action(
+      { updatedAfter: '2026-01-01', createdBefore: '1767312000', json: false },
+      undefined,
+    );
+
+    const { url } = lastRequest();
+    expect(url.searchParams.get('updateAfter')).toBe('1767225600');
+    expect(url.searchParams.get('createBefore')).toBe('1767312000');
+    expect(url.searchParams.has('updateBefore')).toBe(false);
+  });
+
   it('filters contacts by depth and category', async () => {
     respondWith([contact]);
     vi.spyOn(console, 'log').mockImplementation(() => {});
