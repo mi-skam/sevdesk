@@ -58,8 +58,22 @@ jobs:
             echo "::warning::Labelled \`release\`, but there is nothing to release: no fix or feat commits since the last release."
             exit 0
           fi
-          # GitHub computes mergeability asynchronously after release-please
-          # pushed to the pull request, so the first attempts may be refused.
+
+          # Wait for the release pull request's CI: it has just been updated,
+          # and protected branches refuse the merge until required checks pass.
+          for attempt in $(seq 1 12); do
+            output=$(gh pr checks "$number" --repo "$GITHUB_REPOSITORY" 2>&1) || true
+            grep -q "no checks reported" <<<"$output" || break
+            sleep 10
+          done
+          if ! timeout 900 gh pr checks "$number" --repo "$GITHUB_REPOSITORY" \
+            --watch --fail-fast --interval 15; then
+            echo "::error::The checks of release pull request #$number failed or did not finish. Fix them and merge it by hand."
+            exit 1
+          fi
+
+          # GitHub computes mergeability asynchronously, so the first attempts
+          # may still be refused.
           for attempt in 1 2 3 4 5 6; do
             if gh pr merge "$number" --repo "$GITHUB_REPOSITORY" --squash; then
               # Merged with this run's token, which does not trigger another
