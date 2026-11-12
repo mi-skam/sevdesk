@@ -1,0 +1,681 @@
+# OpenAPI Overlay 1.0 with corrections to the official sevdesk API spec.
+#
+# Apply it with `npm run openapi:patch`, which downloads nothing: it reads the
+# spec from ./openapi.yaml (see the README for the download command) and
+# writes ./openapi.patched.yaml. Both files are gitignored; only this overlay
+# is versioned.
+#
+# Every statement below was verified against a live account through this
+# repository's CLI unless it says "unverified", or it comes from the sevdesk
+# API news (https://tech.sevdesk.com/api_news/). The patched spec is a
+# reference for humans. As with the original, never generate code from it.
+overlay: 1.0.0
+info:
+  title: sevdesk API corrections (mi-skam/sevdesk)
+  version: 1.0.0
+extends: https://api.sevdesk.de/openapi.yaml
+
+actions:
+  # ---------------------------------------------------------------- general
+
+  - target: $.info
+    description: Mark the result as patched.
+    update:
+      title: sevdesk API (patched by the mi-skam/sevdesk overlay)
+      x-overlay:
+        source: https://github.com/mi-skam/sevdesk/blob/main/openapi.overlay.yaml
+        notes: See the "Overlay notes" tag for corrections that apply to the whole API.
+
+  - target: $.tags
+    description: Add a section with API-wide corrections.
+    update:
+      - name: Overlay notes
+        x-displayName: Overlay notes (corrections)
+        description: |
+          Corrections and additions from the mi-skam/sevdesk overlay. They apply
+          to the whole API. Endpoint-specific corrections are in the descriptions
+          of the affected parameters and in `x-sevdesk-*` extensions.
+
+          - **Authentication**: the token is accepted only in the
+            `Authorization` header, sent raw without `Bearer`. Passing it as a
+            query parameter was removed on 29.04.2025.
+          - **Pagination**: list endpoints take `limit` and `offset` even where
+            this spec does not declare them. Without `limit` they return 100
+            rows, which silently truncates. `limit` must be an integer from 1 to
+            1000; anything else is `400` "Invalid 'limit' parameter" (since
+            30.05.2025). Page until an empty page rather than a short one.
+          - **Envelope**: responses wrap the payload in `{ "objects": … }`.
+            Endpoints that return a single object still return an array.
+          - **Scalars**: responses return every scalar as a string, including
+            IDs, amounts and flags.
+          - **Partial updates**: `PUT` with `mapAll: true` is a genuine partial
+            update. Fields left out keep their stored value, verified on
+            `/ContactAddress/{contactAddressId}`.
+          - **Validation errors**: some validation errors on orders, invoices,
+            vouchers and credit notes come back as `500` instead of `422`
+            (acknowledged by sevdesk). A client that retries `5xx` retries
+            these too.
+          - **Bookkeeping system 2.0**:
+            - `enshrined` and invoice or credit-note `status` cannot be set
+              directly. Use `/enshrine`, `bookAmount` and the send endpoints.
+            - New vouchers can only be status `50` or `100`.
+            - Quotes, orders and delivery notes with a negative total are
+              rejected.
+          - **Payment links**: no endpoint exposes the link between a voucher and
+            the transaction it was booked against. The `object[id]` filter and
+            the CSV exports do not either.
+          - **Render responses**: since 07.04.2026, `render`, `changeParameter`
+            and `sendByWithRender` on Invoice, Order, CreditNote and Letter
+            return the whole document as Base64 in `pdf`. The former per-page
+            `thumbs` and `pages` are gone.
+          - **Removed endpoints** (deleted from this patched spec):
+            - `GET /Export/datevCSV` was removed on 30.05.2025. Use
+              `createDatevCsvZipExportJob`, the job progress endpoint and the
+              download endpoint instead.
+            - `POST /CreditNote/Factory/createFromVoucher` no longer exists in
+              bookkeeping system 2.0.
+
+  - target: $['x-tagGroups'][0].tags
+    update:
+      - Overlay notes
+
+  - target: $.components
+    description: Shared parameters that the spec only describes in prose.
+    update:
+      parameters:
+        limit:
+          name: limit
+          in: query
+          required: false
+          description: >-
+            Rows per page, an integer from 1 to 1000. Without it the API returns
+            100 rows, which silently truncates the result. Values outside 1–1000
+            and non-integers are `400` (since 30.05.2025).
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+        offset:
+          name: offset
+          in: query
+          required: false
+          description: Number of rows to skip. Applied after the server-side filters.
+          schema: { type: integer, minimum: 0, default: 0 }
+        embed:
+          name: embed
+          in: query
+          required: false
+          description: >-
+            Comma-separated list of references to inflate into full objects, for
+            example `contact` or `supplier`. Without it references are
+            `{ id, objectName }` only.
+          schema: { type: string }
+        createAfter:
+          name: createAfter
+          in: query
+          required: false
+          description: >-
+            Only records created at or after this Unix timestamp in seconds. The
+            bound is inclusive despite the name. Documented by sevdesk only in the
+            tag description.
+          schema: { type: integer }
+          example: 1767225600
+        createBefore:
+          name: createBefore
+          in: query
+          required: false
+          description: Only records created at or before this Unix timestamp in seconds (inclusive).
+          schema: { type: integer }
+          example: 1767225600
+        updateAfter:
+          name: updateAfter
+          in: query
+          required: false
+          description: >-
+            Only records last changed at or after this Unix timestamp in seconds.
+            The bound is inclusive: a record whose `update` equals the value is
+            returned. Suitable for incremental sync, but it cannot reveal
+            deletions.
+          schema: { type: integer }
+          example: 1767225600
+        updateBefore:
+          name: updateBefore
+          in: query
+          required: false
+          description: Only records last changed at or before this Unix timestamp in seconds (inclusive).
+          schema: { type: integer }
+          example: 1767225600
+
+  # ------------------------------------------------- pagination on all lists
+
+  - target: $.paths['/Voucher'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/Invoice'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/Order'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/CreditNote'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/Contact'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/CheckAccountTransaction'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+      ]
+  - target: $.paths['/VoucherPos'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/InvoicePos'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/OrderPos'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/CreditNotePos'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/CommunicationWay'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+      ]
+  - target: $.paths['/Part'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+        { $ref: '#/components/parameters/embed' },
+      ]
+  - target: $.paths['/Tag'].get.parameters
+    update:
+      [
+        { $ref: '#/components/parameters/limit' },
+        { $ref: '#/components/parameters/offset' },
+      ]
+  - target: $.paths['/CheckAccount'].get
+    update:
+      parameters:
+        [
+          { $ref: '#/components/parameters/limit' },
+          { $ref: '#/components/parameters/offset' },
+        ]
+  - target: $.paths['/TagRelation'].get
+    update:
+      parameters:
+        [
+          { $ref: '#/components/parameters/limit' },
+          { $ref: '#/components/parameters/offset' },
+        ]
+  - target: $.paths['/ContactAddress'].get
+    update:
+      parameters:
+        [
+          { $ref: '#/components/parameters/limit' },
+          { $ref: '#/components/parameters/offset' },
+        ]
+      x-sevdesk-notes:
+        - Cannot filter by contact. Fetch all pages and filter on `contact.id`.
+
+  # ------------------------------------------------------------ /Voucher
+
+  - target: $.paths['/Voucher'].get
+    update:
+      x-sevdesk-default-order: voucherDate descending; records with the same date come back in arbitrary order.
+      parameters:
+        - { $ref: '#/components/parameters/createAfter' }
+        - { $ref: '#/components/parameters/createBefore' }
+        - { $ref: '#/components/parameters/updateAfter' }
+        - { $ref: '#/components/parameters/updateBefore' }
+  - target: $.paths['/Voucher'].get.parameters[?(@.name == 'startDate')]
+    update:
+      description: >-
+        Only vouchers whose `voucherDate` is at or after this Unix timestamp in
+        seconds (inclusive). A `dd.mm.yyyy` string is accepted but ignored: the
+        filter then matches every voucher.
+      example: 1767225600
+  - target: $.paths['/Voucher'].get.parameters[?(@.name == 'endDate')]
+    update:
+      description: >-
+        Only vouchers whose `voucherDate` is **before** this Unix timestamp in
+        seconds. Unlike the other document lists, the bound is exclusive: a
+        voucher dated exactly at the timestamp is not returned. A `dd.mm.yyyy`
+        string is accepted but matches no voucher at all.
+      example: 1767225600
+  - target: $.paths['/Voucher'].get.parameters[?(@.name == 'descriptionLike')]
+    update:
+      description: Only vouchers whose `description` (the voucher number) contains this text.
+  - target: $.paths['/Voucher'].get.parameters[?(@.name == 'contact[id]')]
+    update:
+      description: >-
+        Only vouchers whose `supplier` is this contact, or a person belonging to
+        this organization (`supplier.parent`). Must be sent with
+        `contact[objectName]=Contact`.
+
+  # ------------------------------------------------------------ /Invoice
+
+  - target: $.paths['/Invoice'].get
+    update:
+      x-sevdesk-default-order: id descending.
+      parameters:
+        - name: showAll
+          in: query
+          required: false
+          description: >-
+            Without it, reminders (`invoiceType` `MA`) and recurring invoices
+            (`WKR`) are hidden. With `true`, every invoice type is returned.
+          schema: { type: boolean }
+        - { $ref: '#/components/parameters/createAfter' }
+        - { $ref: '#/components/parameters/createBefore' }
+        - { $ref: '#/components/parameters/updateAfter' }
+        - { $ref: '#/components/parameters/updateBefore' }
+  - target: $.paths['/Invoice'].get.parameters[?(@.name == 'startDate')]
+    update:
+      description: >-
+        Only invoices whose `invoiceDate` is at or after this Unix timestamp in
+        seconds (inclusive). A `dd.mm.yyyy` string is accepted but ignored: the
+        filter then matches every invoice.
+      example: 1767225600
+  - target: $.paths['/Invoice'].get.parameters[?(@.name == 'endDate')]
+    update:
+      description: >-
+        Only invoices whose `invoiceDate` is at or before this Unix timestamp in
+        seconds (inclusive). A `dd.mm.yyyy` string is accepted but matches no
+        invoice at all.
+      example: 1767225600
+  - target: $.paths['/Invoice'].get.parameters[?(@.name == 'contact[id]')]
+    update:
+      description: >-
+        Only invoices of this contact, or of a person belonging to this
+        organization (`contact.parent`). Must be sent with
+        `contact[objectName]=Contact`.
+  - target: $.paths
+    description: Document the delete endpoint that the spec only lists for orders and credit notes.
+    update:
+      /Invoice/{invoiceId}:
+        delete:
+          operationId: deleteInvoice
+          summary: Deletes an invoice
+          description: Not listed in the official spec. Used by this CLI to delete draft invoices.
+          x-sevdesk-undocumented: true
+          security: [{ api_key: [] }]
+          tags: [Invoice]
+          parameters:
+            - {
+                name: invoiceId,
+                in: path,
+                required: true,
+                schema: { type: integer },
+              }
+          responses:
+            '200': { description: The invoice was deleted. }
+            '401': { description: Authentication required }
+
+  # -------------------------------------------------------------- /Order
+
+  - target: $.paths['/Order'].get
+    update:
+      x-sevdesk-default-order: id descending.
+      parameters:
+        - { $ref: '#/components/parameters/createAfter' }
+        - { $ref: '#/components/parameters/createBefore' }
+        - { $ref: '#/components/parameters/updateAfter' }
+        - { $ref: '#/components/parameters/updateBefore' }
+  - target: $.paths['/Order'].get.parameters[?(@.name == 'startDate')]
+    update:
+      description: Only orders whose `orderDate` is at or after this Unix timestamp in seconds (inclusive).
+      example: 1767225600
+  - target: $.paths['/Order'].get.parameters[?(@.name == 'endDate')]
+    update:
+      description: Only orders whose `orderDate` is at or before this Unix timestamp in seconds (inclusive).
+      example: 1767225600
+
+  # --------------------------------------------------------- /CreditNote
+
+  - target: $.paths['/CreditNote'].get.parameters[?(@.name == 'startDate')]
+    update:
+      description: >-
+        Only credit notes dated at or after this Unix timestamp in seconds. The
+        schema is an integer; the original `01.01.2020` example contradicts it
+        (unverified on a live account).
+      example: 1767225600
+  - target: $.paths['/CreditNote'].get.parameters[?(@.name == 'endDate')]
+    update:
+      description: >-
+        Only credit notes dated up to this Unix timestamp in seconds. Whether the
+        bound is inclusive is unverified.
+      example: 1767225600
+
+  # ------------------------------------------------------------ /Contact
+
+  - target: $.paths['/Contact'].get
+    update:
+      x-sevdesk-default-order: id descending.
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Only contacts whose `name`, `surename` or `familyname` contains this text.
+          schema: { type: string }
+        - name: category[id]
+          in: query
+          required: false
+          description: Only contacts of this category. Must be sent with `category[objectName]=Category`.
+          schema: { type: integer }
+        - name: category[objectName]
+          in: query
+          required: false
+          schema: { type: string, enum: [Category] }
+        - { $ref: '#/components/parameters/createAfter' }
+        - { $ref: '#/components/parameters/createBefore' }
+        - { $ref: '#/components/parameters/updateAfter' }
+        - { $ref: '#/components/parameters/updateBefore' }
+  - target: $.paths['/Contact'].get.parameters[?(@.name == 'depth')]
+    update:
+      description: >-
+        `0` (the default) returns organizations only, i.e. contacts with a
+        `name`. `1` also returns persons.
+
+  # ------------------------------------------ /CheckAccountTransaction
+
+  - target: $.paths['/CheckAccountTransaction'].get
+    update:
+      x-sevdesk-default-order: valueDate descending; records with the same date come back in arbitrary order.
+  - target: $.paths['/CheckAccountTransaction'].get.parameters[?(@.name == 'isBooked')]
+    update:
+      description: >-
+        `true` returns only booked transactions. `false` is ignored and returns
+        every transaction; filter on `status == "100"` client-side to get
+        unbooked ones.
+  - target: $.paths['/CheckAccountTransaction'].get.parameters[?(@.name == 'startDate')]
+    update:
+      description: >-
+        Only transactions whose `valueDate` is at or after this moment
+        (inclusive). An ISO 8601 date or date-time.
+  - target: $.paths['/CheckAccountTransaction'].get.parameters[?(@.name == 'endDate')]
+    update:
+      description: >-
+        Only transactions whose `valueDate` is at or before this moment
+        (inclusive). An ISO 8601 date or date-time.
+  - target: $.paths['/CheckAccountTransaction'].get.parameters[?(@.name == 'payeePayerName')]
+    update:
+      description: Only transactions whose `payeePayerName` contains this text.
+  - target: $.paths['/CheckAccountTransaction'].get.parameters[?(@.name == 'paymtPurpose')]
+    update:
+      description: Only transactions whose `paymtPurpose` contains this text.
+
+  # ------------------------------------------------------- other lists
+
+  - target: $.paths['/CheckAccount'].get
+    update:
+      x-sevdesk-default-order: The default account first, then id ascending.
+  - target: $.paths['/VoucherPos'].get
+    update:
+      x-sevdesk-default-order: id ascending.
+      x-sevdesk-notes:
+        - Without `voucher[id]` the positions of all vouchers are returned.
+        - '`accountDatev` is `null` for legacy bookkeeping-1.0 positions, which carry `accountingType` instead.'
+  - target: $.paths['/InvoicePos'].get
+    update:
+      x-sevdesk-notes:
+        - Without `invoice[id]` the positions of all invoices are returned.
+        - Use this endpoint instead of `GET /Invoice/{invoiceId}/getPositions` to page through positions; the latter ignores `offset` on live accounts.
+  - target: $.paths['/Part'].get
+    update:
+      x-sevdesk-default-order: id descending.
+  - target: $.paths['/Part'].get.parameters[?(@.name == 'name')]
+    update:
+      description: Only parts whose `name` contains this text.
+
+  # ------------------------------------------------------ voucher booking
+
+  - target: $.paths['/Voucher/{voucherId}/bookAmount'].put.requestBody.content['application/json'].schema.properties.amount
+    update:
+      description: >-
+        The amount as it flows over the check account: **negative** for expense
+        vouchers (`creditDebit` `C`), positive for revenue vouchers. Can be a
+        partial amount. A positive amount on an expense voucher is accepted
+        without error but stored as a negative `paidAmount`, which leaves the
+        voucher at status `750` with `payDate` `null`.
+
+  # ------------------------------------------------------ removed endpoints
+
+  - target: $.paths['/Export/datevCSV']
+    description: Removed by sevdesk on 30.05.2025 in favour of the export job endpoints.
+    remove: true
+  - target: $.paths['/CreditNote/Factory/createFromVoucher']
+    description: No longer available in bookkeeping system 2.0.
+    remove: true
+
+  # ------------------------------------------------ undocumented endpoints
+
+  - target: $.components.schemas
+    update:
+      Model_AccountDatev:
+        type: object
+        description: A booking account (DATEV account). Fields reflect observed responses; every scalar is a string.
+        properties:
+          id: { type: string }
+          objectName: { type: string, example: AccountDatev }
+          create:
+            type: string
+            nullable: true
+            description: '`null` for standard accounts in list responses; `GET /AccountDatev/{accountDatevId}` returns a timestamp.'
+          update:
+            type: string
+            nullable: true
+            description: Same as `create`.
+          number:
+            {
+              type: string,
+              nullable: true,
+              description: Account number in the client's chart of accounts (e.g. SKR04).,
+            }
+          number03:
+            {
+              type: string,
+              nullable: true,
+              description: The corresponding SKR03 number.,
+            }
+          name: { type: string, nullable: true }
+          name03: { type: string, nullable: true }
+          taxRate: { type: string, nullable: true }
+          deprecated: { type: string, nullable: true }
+          hidden: { type: string, nullable: true }
+          deactivated: { type: string, nullable: true }
+          expenseAccount: { type: string, nullable: true }
+          revenueAccount: { type: string, nullable: true }
+          assetAccount: { type: string, nullable: true }
+          balanceSide: { type: string, nullable: true }
+          simpleDescription: { type: string, nullable: true }
+          translatedNumber: { type: string, nullable: true }
+          translatedName: { type: string, nullable: true }
+          validFrom: { type: string, nullable: true }
+          validUntil: { type: string, nullable: true }
+          accountCategory:
+            type: object
+            nullable: true
+            properties: { id: { type: string }, objectName: { type: string } }
+          accountDatevCategory:
+            type: object
+            nullable: true
+            properties: { id: { type: string }, objectName: { type: string } }
+      Model_DocumentFile:
+        type: object
+        properties:
+          filename: { type: string, nullable: true }
+          mimeType: { type: string }
+          base64Encoded: { type: boolean }
+          content:
+            { type: string, description: 'The file content, Base64-encoded.' }
+      Model_NumberSequence:
+        type: object
+        properties:
+          id: { type: string }
+          forObject: { type: string }
+          type: { type: string }
+          format: { type: string }
+          nextSequence:
+            type: string
+            description: The configured counter. Not a reservation; existing drafts can already use this number.
+
+  - target: $.paths
+    update:
+      /AccountDatev:
+        get:
+          operationId: getAccountDatevs
+          summary: Retrieve booking accounts
+          description: >-
+            Not part of the official spec. Returns only accounts that are visible
+            in the sevdesk account picker (`hidden` = `0`) and ignores every
+            filter except `limit` and `offset`. Results are sorted by `number`
+            compared as text (`135`, `1371`, `140`). The documented alternative,
+            ReceiptGuidance, only covers the VAT-relevant subset.
+          x-sevdesk-undocumented: true
+          security: [{ api_key: [] }]
+          tags: [Voucher]
+          parameters:
+            - { $ref: '#/components/parameters/limit' }
+            - { $ref: '#/components/parameters/offset' }
+          responses:
+            '200':
+              description: Booking accounts
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      objects:
+                        {
+                          type: array,
+                          items:
+                            { $ref: '#/components/schemas/Model_AccountDatev' },
+                        }
+            '401': { description: Authentication required }
+      /AccountDatev/{accountDatevId}:
+        get:
+          operationId: getAccountDatevById
+          summary: Retrieve a booking account
+          description: Not part of the official spec. Also returns hidden accounts. Returns an array with one element.
+          x-sevdesk-undocumented: true
+          security: [{ api_key: [] }]
+          tags: [Voucher]
+          parameters:
+            - {
+                name: accountDatevId,
+                in: path,
+                required: true,
+                schema: { type: integer },
+              }
+          responses:
+            '200':
+              description: The booking account
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      objects:
+                        {
+                          type: array,
+                          items:
+                            { $ref: '#/components/schemas/Model_AccountDatev' },
+                        }
+            '401': { description: Authentication required }
+      /Document/{documentId}/download:
+        get:
+          operationId: downloadDocument
+          summary: Download the file of a document
+          description: >-
+            Not part of the official spec. Documents hold the files attached to
+            vouchers and are referenced by `Voucher.document`.
+          x-sevdesk-undocumented: true
+          security: [{ api_key: [] }]
+          tags: [Voucher]
+          parameters:
+            - {
+                name: documentId,
+                in: path,
+                required: true,
+                schema: { type: integer },
+              }
+          responses:
+            '200':
+              description: The file
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      objects:
+                        { $ref: '#/components/schemas/Model_DocumentFile' }
+            '401': { description: Authentication required }
+      /SevSequence/Factory/getByType:
+        get:
+          operationId: getSevSequenceByType
+          summary: Read the numbering configuration of a document type
+          description: Not part of the official spec. Reads the next configured number; it does not reserve it.
+          x-sevdesk-undocumented: true
+          security: [{ api_key: [] }]
+          tags: [Basics]
+          parameters:
+            - name: objectType
+              in: query
+              required: true
+              schema: { type: string, enum: [Invoice, Order] }
+            - name: type
+              in: query
+              required: true
+              description: '`RE` for invoices, `AN` for quotes.'
+              schema: { type: string }
+          responses:
+            '200':
+              description: The number sequence
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      objects:
+                        { $ref: '#/components/schemas/Model_NumberSequence' }
+            '401': { description: Authentication required }

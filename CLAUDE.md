@@ -60,7 +60,8 @@ Built on `zodline` + `zod` + `consola`.
 
 ## Conventions
 
-- **Hand-written types only.** `openapi.yaml` is a local reference download, not a codegen source — it is wrong about media types, `voucherPosSave`, pagination and filters. Never generate code from it.
+- **Hand-written types only.** `openapi.yaml` is a local reference download, not a codegen source — it is wrong about media types, `voucherPosSave`, pagination and filters. Never generate code from it, nor from `openapi.patched.yaml`.
+- `openapi.overlay.yaml` (OpenAPI Overlay 1.0, versioned) records every verified correction to the spec; `npm run openapi:patch` (`scripts/apply-openapi-overlay.mjs`) applies it to `openapi.yaml` and writes the gitignored `openapi.patched.yaml`, failing when a target no longer matches upstream. When you verify new API behavior, add it to the overlay as well as to the API quirks below; mark anything not verified live as unverified.
 - **Bookkeeping system 2.0 only** (`taxRule`, `accountDatev`). 1.0 accounts are rejected by `login` and flagged by `doctor`.
 - SDK methods take a single options object and are documented with a one-line JSDoc naming the endpoint (`/** Retrieves vouchers via \`GET /Voucher\`. */`). Non-obvious API behavior belongs in JSDoc on the affected field.
 - The sevdesk API returns all scalars as strings, including ids — response interfaces reflect that.

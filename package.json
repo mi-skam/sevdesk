@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
+    "openapi:patch": "node scripts/apply-openapi-overlay.mjs",
     "release:pack": "node scripts/package-release.mjs",
     "release:verify": "node scripts/verify-release.mjs",
     "typecheck": "npm run typecheck --workspaces",
@@ -29,6 +30,7 @@
     "tsdown": "0.22.14",
     "typescript": "6.0.3",
     "typescript-eslint": "8.65.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "yaml": "2.8.1"
   }
 }

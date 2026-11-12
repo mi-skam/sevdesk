@@ -196,7 +196,10 @@ The [official OpenAPI specification](https://api.sevdesk.de/openapi.yaml) serves
 
 ```bash
 curl -fsSL https://api.sevdesk.de/openapi.yaml -o openapi.yaml
+npm run openapi:patch    # writes openapi.patched.yaml
 ```
+
+The official specification is wrong or silent in places: undeclared pagination and change filters, date formats the API ignores, inclusive and exclusive bounds, default sort orders, removed and undocumented endpoints. [`openapi.overlay.yaml`](./openapi.overlay.yaml) records these corrections as an [OpenAPI Overlay](https://spec.openapis.org/overlay/v1.0.0.html), verified against a live account or taken from the [sevdesk API news](https://tech.sevdesk.com/api_news/). `npm run openapi:patch` applies it and fails if a target no longer exists upstream, so a changed spec is noticed. Both YAML specs stay out of the repository; only the overlay is versioned.
 
 ## License
 
