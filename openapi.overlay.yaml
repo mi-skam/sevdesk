@@ -547,7 +547,7 @@ actions:
           mimeType: { type: string }
           base64Encoded: { type: boolean }
           content:
-            { type: string, description: The file content, Base64-encoded. }
+            { type: string, description: 'The file content, Base64-encoded.' }
       Model_NumberSequence:
         type: object
         properties:
