@@ -5,5 +5,10 @@ release-artifacts/
 *.log
 .DS_Store
 openapi.yaml
+# Local databases hold live account data.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 # Local task brief contains live account data; never publish or format it.
 /sevdesk-cli-invoice-workflows.md

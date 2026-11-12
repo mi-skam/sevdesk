@@ -314,6 +314,13 @@ describe('InvoicesResource.listPositions', () => {
     );
     expect(lastRequest(fetch).init.method).toBe('GET');
   });
+  it('lists the positions of all invoices without an invoice filter', async () => {
+    const fetch = createMockFetch({ objects: [] });
+    await createResource(fetch).listPositions({ limit: 1000, offset: 0 });
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/InvoicePos?limit=1000&offset=0`,
+    );
+  });
   it('propagates API errors', async () => {
     const fetch = createMockFetch(
       { error: { message: 'ACME invalid invoice' } },
