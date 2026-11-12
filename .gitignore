@@ -5,6 +5,7 @@ release-artifacts/
 *.log
 .DS_Store
 openapi.yaml
+openapi.patched.yaml
 # Local databases hold live account data.
 *.db
 *.db-journal
