@@ -117,6 +117,32 @@ The CLI is designed to be scriptable:
 sevdesk transactions:list --unbooked --json | jq -r '.[].id'
 ```
 
+## Tax rules
+
+Bookkeeping system 2.0 identifies VAT treatment by a tax rule ID (`taxRuleId` in `invoices:create` and quotes, `--tax-rule` in `vouchers:create`). The IDs are fixed across accounts; the allowed tax rates per position are enforced by the API (`422` otherwise). Use [`guidance:accounts`](#guidanceaccounts) to see which tax rules a booking account allows.
+
+| ID  | Tax rule                                                            | Use     | Tax rates  | Not supported for                                                            |
+| --- | ------------------------------------------------------------------- | ------- | ---------- | ---------------------------------------------------------------------------- |
+| 1   | Umsatzsteuerpflichtige Umsätze                                      | Revenue | 0, 7, 19   |                                                                              |
+| 2   | Ausfuhren                                                           | Revenue | 0          |                                                                              |
+| 3   | Innergemeinschaftliche Lieferungen                                  | Revenue | 0, 7, 19   |                                                                              |
+| 4   | Steuerfreie Umsätze §4 UStG                                         | Revenue | 0          |                                                                              |
+| 5   | Reverse Charge gem. §13b UStG                                       | Revenue | 0          |                                                                              |
+| 17  | Nicht im Inland steuerbare Leistung (e.g. customers outside the EU) | Revenue | 0          | Advance, partial and final invoices                                          |
+| 18  | One Stop Shop (goods)                                               | Revenue | By country | Vouchers, e-invoices, custom revenue account, advance/partial/final invoices |
+| 19  | One Stop Shop (electronic service)                                  | Revenue | By country | Same as 18                                                                   |
+| 20  | One Stop Shop (other service)                                       | Revenue | By country | Same as 18                                                                   |
+| 21  | Reverse Charge gem. §18b UStG                                       | Revenue | 0          | Vouchers, advance/partial/final invoices                                     |
+| 8   | Innergemeinschaftliche Erwerbe                                      | Expense | 0, 7, 19   |                                                                              |
+| 9   | Vorsteuerabziehbare Aufwendungen                                    | Expense | 0, 7, 19   |                                                                              |
+| 10  | Nicht vorsteuerabziehbare Aufwendungen                              | Expense | 0          |                                                                              |
+| 12  | Reverse Charge gem. §13b Abs. 2 UStG mit Vorsteuerabzug 0% (19%)    | Expense | 0          |                                                                              |
+| 13  | Reverse Charge gem. §13b UStG ohne Vorsteuerabzug 0% (19%)          | Expense | 0          |                                                                              |
+| 14  | Reverse Charge gem. §13b Abs. 1 EU Umsätze 0% (19%)                 | Expense | 0          |                                                                              |
+| 11  | Steuer nicht erhoben nach §19 UStG (Kleinunternehmer)               | Revenue | 0          |                                                                              |
+
+Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses. Source: the sevdesk API specification and [API news](https://tech.sevdesk.com/api_news/), as of November 2026.
+
 ## Commands
 
 - [`login`](#login)
@@ -697,7 +723,7 @@ sevdesk invoices:create invoice.json --yes --json
 - `--yes`: Confirm draft creation; required in non-interactive mode unless using `--dry-run`.
 - `--json`: Print the SDK result (`invoice` and `positions`) as JSON.
 
-Example `invoice.json` (invented IDs; resolve real contact, SevUser, tax rule, and unit IDs first):
+Example `invoice.json` (invented IDs; resolve real contact, SevUser and unit IDs first; tax rule IDs are listed under [Tax rules](#tax-rules)):
 
 ```json
 {
@@ -1262,7 +1288,7 @@ sevdesk vouchers:create [receipt-file] [options]
 
 - `--status`: Status of the created voucher. Supported values are `draft` and `open`. Defaults to `open`.
 - `--credit-debit`: `C` for expense (credit), `D` for income (debit) vouchers. Defaults to `C`.
-- `--tax-rule`: ID of the tax rule, for example `9` for deductible input tax expenses. If omitted, you will be prompted.
+- `--tax-rule`: ID of the tax rule, for example `9` for deductible input tax expenses (see [Tax rules](#tax-rules)). If omitted, you will be prompted.
 - `--account-datev`: ID of the booking account (AccountDatev). Find it with [`guidance:accounts`](#guidanceaccounts). If omitted, you will be prompted.
 - `--amount`: Amount of the voucher position. If omitted, you will be prompted.
 - `--net`: Treat the amount as net instead of gross. Defaults to `false`.

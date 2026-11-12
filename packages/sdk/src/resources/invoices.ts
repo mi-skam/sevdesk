@@ -266,8 +266,12 @@ export interface SaveInvoiceResult {
 }
 
 export interface RenderInvoiceResult {
-  thumbs: unknown[];
-  pages: number;
+  /**
+   * The whole document as a Base64-encoded PDF. Since 07.04.2026 the render
+   * endpoints return this instead of the former per-page `thumbs` images and
+   * `pages` count.
+   */
+  pdf: string;
   /** Internal id of the rendered document. */
   docId: string;
   parameters: InvoiceRenderParameter[];
