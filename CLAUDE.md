@@ -71,6 +71,13 @@ Built on `zodline` + `zod` + `consola`.
 ## API quirks to preserve
 
 - List endpoints default to `limit=100` when no limit is sent, which silently truncates. CLI list commands therefore page through `fetchAll` (`packages/cli/src/pagination.ts`) instead of issuing a single request; it stops on an empty page, not a short one, so a server-side cap cannot truncate either. SDK `list` methods stay 1:1 with the endpoint and do not paginate.
+- `limit` must be an integer from 1 to 1000; anything else (above 1000, below 1, non-integer) is `400` "Invalid 'limit' parameter" since 30.05.2025. `fetchAll`'s page size of 1000 is therefore the maximum — never raise it.
+- The token is accepted only in the `Authorization` header; passing it as a query parameter was removed on 29.04.2025.
+- `GET /Export/datevCSV` was removed on 30.05.2025, although the spec still lists it. DATEV exports go through `createDatevCsvZipExportJob` → job progress → download. `POST /CreditNote/Factory/createFromVoucher` is likewise listed but gone in bookkeeping 2.0. Do not add either.
+- Since 07.04.2026 `render`, `changeParameter` and `sendByWithRender` on Invoice, Order, CreditNote and Letter return the whole document as Base64 in `pdf`; the former `thumbs` (one image per page) and `pages` are gone.
+- Some validation errors on orders, invoices, vouchers and credit notes come back as `500` instead of `422` (acknowledged by sevdesk as a bug). Because `PUT`/`DELETE` are retried on `5xx`, such an error is retried before it surfaces; it is not an outage.
+- In bookkeeping 2.0, `enshrined` and invoice/credit-note `status` cannot be set directly (use `/enshrine`, `bookAmount` and the send endpoints), new vouchers can only be `50` or `100`, and quotes, orders and delivery notes with a negative total are rejected.
+- Source for these: the sevdesk API news at https://tech.sevdesk.com/api_news/ — check it when an endpoint behaves unexpectedly.
 - `GET /CheckAccountTransaction` ignores `isBooked=false`; `transactions:list --unbooked` filters client-side on `status === '100'`. Client-side filters make `fetchAll` request full pages so `--limit` still returns the requested number of rows.
 - `/AccountDatev` is **undocumented**. `list` returns only non-hidden accounts and ignores every filter except `limit`/`offset`; `get` reaches hidden accounts. The documented alternative, `ReceiptGuidanceResource`, only covers the VAT-relevant subset.
 - `GET /Voucher`, `/Invoice`, `/Order` and `/Contact` accept `createAfter`/`createBefore`/`updateAfter`/`updateBefore` (documented only in the spec's prose). Verified live: Unix seconds work, and the bounds are **inclusive** (`>=`/`<=`) despite the names. No other list endpoint has a change filter.

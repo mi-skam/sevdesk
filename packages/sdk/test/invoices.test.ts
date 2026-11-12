@@ -380,6 +380,19 @@ describe('InvoicesResource.render', () => {
 
     expect(parsedBody(fetch)).toEqual({});
   });
+
+  it('returns the rendered document as a Base64 PDF', async () => {
+    const rendered = {
+      pdf: 'JVBERi0xLjQK',
+      docId: 'ACME-1',
+      parameters: [],
+    };
+    const fetch = createMockFetch({ objects: rendered });
+
+    expect(await createResource(fetch).render({ invoiceId: 1 })).toEqual(
+      rendered,
+    );
+  });
 });
 
 describe('InvoicesResource.sendViaEmail', () => {
