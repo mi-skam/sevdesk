@@ -4,6 +4,16 @@ import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
+import {
+  byIdDesc,
+  contains,
+  equals,
+  localList,
+  localOption,
+  matchesChangeFilters,
+  readLocal,
+  refersTo,
+} from '../../local';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -42,23 +52,45 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of contacts to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
-    const contacts = await fetchAll(
-      (page) =>
-        client.contacts.list({
-          name: options.name,
-          customerNumber: options.customerNumber,
-          depth: toDepth(options.depth),
-          categoryId: options.category,
-          ...changeFilters(options),
-          ...page,
-        }),
-      { limit: options.limit, offset: options.offset },
-    );
+    let contacts: Contact[];
+    if (options.local) {
+      contacts = localList(await readLocal<Contact>('contacts'), {
+        where: (contact) =>
+          // Depth 0, the API default, returns organizations only.
+          (options.depth !== undefined && options.depth !== 0
+            ? true
+            : !!contact.name) &&
+          (options.name === undefined ||
+            [contact.name, contact.surename, contact.familyname].some((part) =>
+              contains(part, options.name),
+            )) &&
+          equals(contact.customerNumber, options.customerNumber) &&
+          refersTo(contact.category, options.category) &&
+          matchesChangeFilters(contact, options),
+        sort: byIdDesc,
+        limit: options.limit,
+        offset: options.offset,
+      });
+    } else {
+      const client = await requireClient();
+      contacts = await fetchAll(
+        (page) =>
+          client.contacts.list({
+            name: options.name,
+            customerNumber: options.customerNumber,
+            depth: toDepth(options.depth),
+            categoryId: options.category,
+            ...changeFilters(options),
+            ...page,
+          }),
+        { limit: options.limit, offset: options.offset },
+      );
+    }
     if (options.json) {
       printJson(contacts);
       return;

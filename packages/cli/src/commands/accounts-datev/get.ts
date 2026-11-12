@@ -1,8 +1,10 @@
+import type { AccountDatev } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import { localOption, readLocalRecord } from '../../local';
 import { printJson } from '../../output';
 
 export default defineCommand({
@@ -15,17 +17,23 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
     const accountDatevId = await requireIdArgument({
       value: targetId,
       requirement: 'a booking account as a positional argument',
       question: 'Enter the booking account ID:',
     });
-    const account = await client.accountsDatev.get({ accountDatevId });
+    const account = options.local
+      ? await readLocalRecord<AccountDatev>(
+          'accounts-datev',
+          accountDatevId,
+          'Booking account',
+        )
+      : await (await requireClient()).accountsDatev.get({ accountDatevId });
     if (options.json) {
       printJson(account);
       return;

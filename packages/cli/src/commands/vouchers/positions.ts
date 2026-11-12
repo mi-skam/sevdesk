@@ -1,8 +1,15 @@
-import type { ModelRefResponse } from '@mi-skam/sevdesk-sdk';
+import type { ModelRefResponse, VoucherPosition } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { requireClient } from '../../client';
+import {
+  byIdAsc,
+  localList,
+  localOption,
+  readLocal,
+  refersTo,
+} from '../../local';
 import { printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -35,20 +42,34 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of positions to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
-    const positions = await fetchAll(
-      (page) =>
-        client.vouchers.listPositions({
-          voucherId: options.voucher,
-          embed: ['accountDatev'],
-          ...page,
-        }),
-      { limit: options.limit, offset: options.offset },
-    );
+    let positions: VoucherPosition[];
+    if (options.local) {
+      positions = localList(
+        await readLocal<VoucherPosition>('voucher-positions'),
+        {
+          where: (position) => refersTo(position.voucher, options.voucher),
+          sort: byIdAsc,
+          limit: options.limit,
+          offset: options.offset,
+        },
+      );
+    } else {
+      const client = await requireClient();
+      positions = await fetchAll(
+        (page) =>
+          client.vouchers.listPositions({
+            voucherId: options.voucher,
+            embed: ['accountDatev'],
+            ...page,
+          }),
+        { limit: options.limit, offset: options.offset },
+      );
+    }
     if (options.json) {
       printJson(positions);
       return;

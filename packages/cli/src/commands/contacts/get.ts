@@ -1,9 +1,21 @@
-import type { CommunicationWay, ContactAddress } from '@mi-skam/sevdesk-sdk';
+import type {
+  CommunicationWay,
+  Contact,
+  ContactAddress,
+} from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import {
+  byIdAsc,
+  localList,
+  localOption,
+  readLocal,
+  readLocalRecord,
+  refersTo,
+} from '../../local';
 import { printJson } from '../../output';
 import { fetchAll } from '../../pagination';
 
@@ -17,25 +29,37 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
+    const client = options.local ? undefined : await requireClient();
     const contactId = await requireIdArgument({
       value: targetId,
       requirement: 'a contact ID as a positional argument',
       question: 'Enter the contact ID:',
     });
-    const contact = await client.contacts.get({ contactId });
+    const contact = client
+      ? await client.contacts.get({ contactId })
+      : await readLocalRecord<Contact>('contacts', contactId, 'Contact');
     /** The `/ContactAddress` endpoint cannot filter by contact, so we filter here. */
-    const addresses = await fetchAll(
-      (page) => client.contactAddresses.list(page),
-      { keep: (address) => address.contact.id === String(contactId) },
-    );
-    const communicationWays = await fetchAll((page) =>
-      client.communicationWays.list({ contactId, ...page }),
-    );
+    const addresses = client
+      ? await fetchAll((page) => client.contactAddresses.list(page), {
+          keep: (address) => address.contact.id === String(contactId),
+        })
+      : localList(await readLocal<ContactAddress>('contact-addresses'), {
+          where: (address) => refersTo(address.contact, contactId),
+          sort: byIdAsc,
+        });
+    const communicationWays = client
+      ? await fetchAll((page) =>
+          client.communicationWays.list({ contactId, ...page }),
+        )
+      : localList(await readLocal<CommunicationWay>('communication-ways'), {
+          where: (way) => refersTo(way.contact, contactId),
+          sort: byIdAsc,
+        });
     if (options.json) {
       printJson({ contact, addresses, communicationWays });
       return;

@@ -1,9 +1,20 @@
-import type { VoucherStatus } from '@mi-skam/sevdesk-sdk';
+import type { Voucher, VoucherStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
+import {
+  byDateDesc,
+  contains,
+  equals,
+  inDateRange,
+  localList,
+  localOption,
+  matchesChangeFilters,
+  readLocal,
+  refersToContact,
+} from '../../local';
 import {
   contactLabel,
   printJson,
@@ -57,26 +68,45 @@ export default defineCommand({
         .number()
         .optional()
         .describe('Number of vouchers to skip.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options) => {
-    const client = await requireClient();
-    const vouchers = await fetchAll(
-      (page) =>
-        client.vouchers.list({
-          status: options.status as VoucherStatus | undefined,
-          creditDebit: options.creditDebit,
-          descriptionLike: options.descriptionLike,
-          startDate: options.startDate,
-          endDate: options.endDate,
-          contactId: options.contact,
-          embed: ['supplier'],
-          ...changeFilters(options),
-          ...page,
-        }),
-      { limit: options.limit, offset: options.offset },
-    );
+    let vouchers: Voucher[];
+    if (options.local) {
+      vouchers = localList(await readLocal<Voucher>('vouchers'), {
+        where: (voucher) =>
+          equals(voucher.status, options.status) &&
+          equals(voucher.creditDebit, options.creditDebit) &&
+          contains(voucher.description, options.descriptionLike) &&
+          inDateRange(voucher.voucherDate, options.startDate, options.endDate, {
+            endExclusive: true,
+          }) &&
+          refersToContact(voucher.supplier, options.contact) &&
+          matchesChangeFilters(voucher, options),
+        sort: byDateDesc((voucher) => voucher.voucherDate),
+        limit: options.limit,
+        offset: options.offset,
+      });
+    } else {
+      const client = await requireClient();
+      vouchers = await fetchAll(
+        (page) =>
+          client.vouchers.list({
+            status: options.status as VoucherStatus | undefined,
+            creditDebit: options.creditDebit,
+            descriptionLike: options.descriptionLike,
+            startDate: options.startDate,
+            endDate: options.endDate,
+            contactId: options.contact,
+            embed: ['supplier'],
+            ...changeFilters(options),
+            ...page,
+          }),
+        { limit: options.limit, offset: options.offset },
+      );
+    }
     if (options.json) {
       printJson(vouchers);
       return;

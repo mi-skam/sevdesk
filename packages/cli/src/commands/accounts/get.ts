@@ -1,8 +1,10 @@
+import type { CheckAccount } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import { localOption, readLocalRecord } from '../../local';
 import { printJson } from '../../output';
 
 export default defineCommand({
@@ -14,17 +16,23 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
     const checkAccountId = await requireIdArgument({
       value: targetId,
       requirement: 'a check account ID as a positional argument',
       question: 'Enter the check account ID:',
     });
-    const checkAccount = await client.checkAccounts.get({ checkAccountId });
+    const checkAccount = options.local
+      ? await readLocalRecord<CheckAccount>(
+          'check-accounts',
+          checkAccountId,
+          'Check account',
+        )
+      : await (await requireClient()).checkAccounts.get({ checkAccountId });
     if (options.json) {
       printJson(checkAccount);
       return;

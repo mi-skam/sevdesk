@@ -88,10 +88,19 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 - **Atomic**: everything is fetched first and written in one transaction. A failed request leaves the database unchanged.
 - Requires Node.js 22.13 or later (built-in `node:sqlite`).
 
+Every `list` and `get` command for synced data accepts `--local` to answer from the database instead of the API: no requests, no token needed, and the same `--json` output as the live command. Filters, sort order, `--offset` and `--limit` reproduce the API's behavior, including its quirks. Commands the server computes (`accounts:balance`, `guidance:accounts`, `numbering:get`, `export:*`, `*:pdf`) stay live-only. Local results are only as fresh as the last `db:sync`.
+
+Known differences from live output:
+
+- Records with the same sort date (`voucherDate`, `valueDate`) or DATEV account number come back in an arbitrary order from the API; locally they are ordered by ID, newest first. A `--limit` cutting through such a group can therefore pick different records.
+- `accounts-datev:get --local` returns the list representation, in which `create` and `update` are `null` for standard accounts. Hidden accounts are not synced and are only available live.
+- `get --local` still shows a record that was deleted in sevdesk, with a warning naming when the sync stopped seeing it.
+
 ```bash
 sevdesk db:sync          # first run: everything; later runs: only what changed
 sevdesk db:sync --full   # fetch everything and detect deletions
 sevdesk db:info          # path, size and record counts per entity
+sevdesk vouchers:list --local --status 100   # answered from the database
 ```
 
 ## Scripting
@@ -246,6 +255,7 @@ sevdesk accounts-datev:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `accounts-datev:list`
@@ -262,6 +272,7 @@ sevdesk accounts-datev:list [options]
 - `--name-like`: Only show accounts whose name contains this text. Filtered client-side across all visible accounts.
 - `--limit`: Maximum number of accounts to return. Defaults to all of them.
 - `--offset`: Number of accounts to skip before filtering.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `accounts:balance`
@@ -321,6 +332,7 @@ sevdesk accounts:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `accounts:list`
@@ -335,6 +347,7 @@ sevdesk accounts:list [options]
 
 - `--limit`: The maximum number of check accounts to return. Defaults to all of them.
 - `--offset`: The number of check accounts to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `contacts:add-address`
@@ -452,6 +465,7 @@ sevdesk contacts:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format. Prints an object with the keys `contact`, `addresses` and `communicationWays`.
 
 ### `contacts:list`
@@ -474,6 +488,7 @@ sevdesk contacts:list [options]
 - `--updated-before`: Only contacts last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of contacts to return. Defaults to all of them.
 - `--offset`: Number of contacts to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `contacts:update`
@@ -529,6 +544,7 @@ sevdesk credit-notes:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `credit-notes:list`
@@ -548,6 +564,7 @@ sevdesk credit-notes:list [options]
 - `--contact`: ID of the contact whose credit notes to list.
 - `--limit`: Maximum number of credit notes to return. Defaults to all of them.
 - `--offset`: Number of credit notes to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `credit-notes:pdf`
@@ -857,6 +874,7 @@ sevdesk invoices:get [id] [options]
 **Options:**
 
 - `--positions`: Include all line items, paginated through `/InvoicePos` (the invoice convenience endpoint can ignore offsets). With `--json`, returns `{ invoice, positions }` instead of the invoice alone.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `invoices:list`
@@ -881,6 +899,7 @@ sevdesk invoices:list [options]
 - `--updated-before`: Only invoices last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of invoices to return. Defaults to all of them.
 - `--offset`: Number of invoices to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 Duplicate draft numbers in the returned rows produce a warning on stderr naming
@@ -941,6 +960,7 @@ sevdesk orders:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `orders:list`
@@ -964,6 +984,7 @@ sevdesk orders:list [options]
 - `--updated-before`: Only orders last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of orders to return. Defaults to all of them.
 - `--offset`: Number of orders to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `orders:pdf`
@@ -994,6 +1015,7 @@ sevdesk parts:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `parts:list`
@@ -1010,6 +1032,7 @@ sevdesk parts:list [options]
 - `--part-number`: Filter by part number.
 - `--limit`: Maximum number of parts to return. Defaults to all of them.
 - `--offset`: Number of parts to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `quotes:create`
@@ -1057,7 +1080,7 @@ sevdesk quotes:get 42 --positions --json
 
 **Argument:** `id` (required quote ID / Angebots-ID).
 
-**Options:** `--positions`, `--json`.
+**Options:** `--positions`, `--local`, `--json`.
 With positions, JSON is `{ quote, positions }`; otherwise it is the quote.
 
 ### `quotes:list`
@@ -1068,7 +1091,7 @@ List quotes (Angebote), filtering out other order types while paginating.
 sevdesk quotes:list --contact 7 --status 100 --limit 20 --json
 ```
 
-**Options:** `--contact`, `--status`, `--limit`, `--json`.
+**Options:** `--contact`, `--status`, `--limit`, `--local`, `--json`.
 Status values: `100` draft, `200` delivered, `300` rejected/cancelled,
 `500` accepted, `750` partially calculated, `1000` calculated.
 
@@ -1146,6 +1169,7 @@ sevdesk tags:list [options]
 
 - `--limit`: Maximum number of tags to return. Defaults to all of them.
 - `--offset`: Number of tags to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `transactions:create`
@@ -1179,6 +1203,7 @@ sevdesk transactions:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `transactions:list`
@@ -1199,6 +1224,7 @@ sevdesk transactions:list [options]
 - `--purpose`: Only show transactions with this payment purpose.
 - `--limit`: The maximum number of transactions to return. Defaults to all of them.
 - `--offset`: The number of transactions to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `vouchers:book`
@@ -1293,6 +1319,7 @@ sevdesk vouchers:get [id] [options]
 
 **Options:**
 
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `vouchers:list`
@@ -1317,6 +1344,7 @@ sevdesk vouchers:list [options]
 - `--updated-before`: Only vouchers last changed at or before this moment. Same formats.
 - `--limit`: Maximum number of vouchers to return. Defaults to all of them.
 - `--offset`: Number of vouchers to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `vouchers:open`
@@ -1346,6 +1374,7 @@ sevdesk vouchers:positions [options]
 - `--voucher`: ID of the voucher whose positions to list.
 - `--limit`: Maximum number of positions to return. Defaults to all of them.
 - `--offset`: Number of positions to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `vouchers:reset-to-draft`

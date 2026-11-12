@@ -1,9 +1,18 @@
+import type { Invoice, InvoicePosition } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { fetchInvoicePositions } from '../../invoices/positions';
+import {
+  byIdAsc,
+  localList,
+  localOption,
+  readLocal,
+  readLocalRecord,
+  refersTo,
+} from '../../local';
 import { contactLabel, printJson } from '../../output';
 
 export default defineCommand({
@@ -19,23 +28,29 @@ export default defineCommand({
         .boolean()
         .optional()
         .describe('Include all line items in the output.'),
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
+    const client = options.local ? undefined : await requireClient();
     const invoiceId = await requireIdArgument({
       value: targetId,
       requirement: 'an invoice ID as a positional argument',
       question: 'Enter the invoice ID:',
     });
-    const invoice = await client.invoices.get({
-      invoiceId,
-      embed: ['contact'],
-    });
-    const positions = options.positions
-      ? await fetchInvoicePositions(client, invoiceId)
-      : undefined;
+    const invoice = client
+      ? await client.invoices.get({ invoiceId, embed: ['contact'] })
+      : await readLocalRecord<Invoice>('invoices', invoiceId, 'Invoice');
+    let positions: InvoicePosition[] | undefined;
+    if (options.positions) {
+      positions = client
+        ? await fetchInvoicePositions(client, invoiceId)
+        : localList(await readLocal<InvoicePosition>('invoice-positions'), {
+            where: (position) => refersTo(position.invoice, invoiceId),
+            sort: byIdAsc,
+          });
+    }
     if (options.json) {
       printJson(positions ? { invoice, positions } : invoice);
       return;

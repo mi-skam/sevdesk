@@ -1,8 +1,10 @@
+import type { Part } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
+import { localOption, readLocalRecord } from '../../local';
 import { printJson } from '../../output';
 
 export default defineCommand({
@@ -14,17 +16,19 @@ export default defineCommand({
   ]),
   options: defineOptions(
     z.object({
+      ...localOption,
       json: z.boolean().default(false).describe('Output in JSON format.'),
     }),
   ),
   action: async (options, [targetId]) => {
-    const client = await requireClient();
     const partId = await requireIdArgument({
       value: targetId,
       requirement: 'a part ID as a positional argument',
       question: 'Enter the part ID:',
     });
-    const part = await client.parts.get({ partId });
+    const part = options.local
+      ? await readLocalRecord<Part>('parts', partId, 'Part')
+      : await (await requireClient()).parts.get({ partId });
     if (options.json) {
       printJson(part);
       return;
