@@ -25,6 +25,7 @@ export * from './resources/tags';
 export * from './resources/transactions';
 export * from './resources/vouchers';
 export type {
+  ChangeFilterOptions,
   DateInput,
   ListOptions,
   ModelRef,

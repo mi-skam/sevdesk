@@ -314,6 +314,13 @@ describe('InvoicesResource.listPositions', () => {
     );
     expect(lastRequest(fetch).init.method).toBe('GET');
   });
+  it('lists the positions of all invoices without an invoice filter', async () => {
+    const fetch = createMockFetch({ objects: [] });
+    await createResource(fetch).listPositions({ limit: 1000, offset: 0 });
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/InvoicePos?limit=1000&offset=0`,
+    );
+  });
   it('propagates API errors', async () => {
     const fetch = createMockFetch(
       { error: { message: 'ACME invalid invoice' } },
@@ -727,4 +734,22 @@ describe('InvoicesResource draft workflows', () => {
       });
     },
   );
+});
+
+describe('InvoicesResource.list change filters', () => {
+  it('sends create and update filters as Unix seconds', async () => {
+    const fetch = createMockFetch({ objects: [] });
+
+    await createResource(fetch).list({
+      createAfter: new Date('2026-01-01T00:00:00Z'),
+      createBefore: 1767312000,
+      updateAfter: new Date('2026-01-03T00:00:30.900Z'),
+      updateBefore: '1767484800',
+    });
+
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/Invoice?createAfter=1767225600&createBefore=1767312000` +
+        '&updateAfter=1767398430&updateBefore=1767484800',
+    );
+  });
 });

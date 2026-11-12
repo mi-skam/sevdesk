@@ -1,6 +1,7 @@
-import { toIsoDateTime, toVoucherDate } from '../dates';
+import { changeFilterQuery, toIsoDateTime, toVoucherDate } from '../dates';
 import { SevDeskError } from '../errors';
 import type {
+  ChangeFilterOptions,
   DateInput,
   ListOptions,
   ModelRef,
@@ -116,7 +117,7 @@ export interface SaveInvoiceOptions {
   takeDefaultAddress?: boolean;
 }
 
-export interface ListInvoicesOptions extends ListOptions {
+export interface ListInvoicesOptions extends ListOptions, ChangeFilterOptions {
   /** Includes all invoice types, including recurring and reminder records. */
   showAll?: boolean;
   status?: InvoiceStatus;
@@ -334,6 +335,7 @@ export class InvoicesResource extends BaseResource {
       method: 'GET',
       path: '/Invoice',
       query: {
+        ...changeFilterQuery(options),
         showAll,
         status,
         invoiceNumber,
@@ -444,9 +446,12 @@ export class InvoicesResource extends BaseResource {
     });
   }
 
-  /** Lists invoice positions with pagination via `GET /InvoicePos`. */
+  /**
+   * Lists invoice positions with pagination via `GET /InvoicePos`. Without
+   * `invoiceId`, the positions of all invoices.
+   */
   public listPositions(
-    options: { invoiceId: number; embed?: string[] } & ListOptions,
+    options: { invoiceId?: number; embed?: string[] } & ListOptions = {},
   ): Promise<InvoicePosition[]> {
     const { invoiceId, limit, offset, embed } = options;
     return this.http.request<InvoicePosition[]>({
@@ -454,7 +459,7 @@ export class InvoicesResource extends BaseResource {
       path: '/InvoicePos',
       query: {
         'invoice[id]': invoiceId,
-        'invoice[objectName]': 'Invoice',
+        'invoice[objectName]': invoiceId === undefined ? undefined : 'Invoice',
         limit,
         offset,
         embed,

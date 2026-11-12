@@ -2,6 +2,7 @@ import type { InvoiceStatus } from '@mi-skam/sevdesk-sdk';
 import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
+import { changeFilterOptions, changeFilters } from '../../change-filters';
 import { requireClient } from '../../client';
 import { contactLabel, printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
@@ -46,6 +47,7 @@ export default defineCommand({
         .number()
         .optional()
         .describe('ID of the contact whose invoices to list.'),
+      ...changeFilterOptions('invoices'),
       limit: z.coerce
         .number()
         .optional()
@@ -79,6 +81,7 @@ export default defineCommand({
           endDate: options.endDate,
           contactId: options.contact,
           embed: ['contact'],
+          ...changeFilters(options),
           ...page,
         }),
       {

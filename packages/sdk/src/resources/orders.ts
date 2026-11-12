@@ -1,6 +1,7 @@
-import { toVoucherDate } from '../dates';
+import { changeFilterQuery, toVoucherDate } from '../dates';
 import { SevDeskError } from '../errors';
 import type {
+  ChangeFilterOptions,
   DateInput,
   ListOptions,
   ModelRef,
@@ -87,7 +88,7 @@ export interface SaveOrderOptions {
   positions: OrderPositionInput[];
 }
 
-export interface ListOrdersOptions extends ListOptions {
+export interface ListOrdersOptions extends ListOptions, ChangeFilterOptions {
   status?: OrderStatus;
   orderNumber?: string;
   startDate?: DateInput;
@@ -302,6 +303,7 @@ export class OrdersResource extends BaseResource {
       method: 'GET',
       path: '/Order',
       query: {
+        ...changeFilterQuery(options),
         status,
         orderNumber,
         startDate: toOptionalDate(startDate),
