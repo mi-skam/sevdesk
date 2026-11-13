@@ -28,10 +28,12 @@ export default defineCommand({
       requirement: 'a check account ID as a positional argument',
       question: 'Enter the check account ID:',
     });
-    const balance = await client.checkAccounts.getBalanceAtDate({
+    const raw = await client.checkAccounts.getBalanceAtDate({
       checkAccountId,
       date: options.date,
     });
+    // The API answers "-0" for an account whose transactions cancel out.
+    const balance = /^-0(\.0+)?$/.test(raw) ? raw.slice(1) : raw;
     if (options.json) {
       printJson({ checkAccountId, date: options.date, balance });
       return;

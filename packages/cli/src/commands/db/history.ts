@@ -2,7 +2,7 @@ import { consola } from 'consola';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { parseMoment } from '../../change-filters';
-import { describeChanges } from '../../history';
+import { describeChanges, recordLabel } from '../../history';
 import { printJson, printTable } from '../../output';
 import { withStore } from '../../store';
 import { ENTITIES } from '../../sync';
@@ -77,6 +77,7 @@ export default defineCommand({
     );
     const rows = changes.map((change) => ({
       ...change,
+      label: recordLabel(change.data ?? change.previous),
       changes:
         change.kind === 'updated' || change.kind === 'restored'
           ? describeChanges(change.previous, change.data)
@@ -97,6 +98,7 @@ export default defineCommand({
         recorded: localMinute(row.recordedAt),
         entity: row.entity,
         id: row.id,
+        label: row.label,
         change: row.kind,
         changes:
           id === undefined && row.changes.length > MAX_SUMMARY_LENGTH
