@@ -1,5 +1,6 @@
 import type { SevDeskOptions } from './http-client';
 import { HttpClient } from './http-client';
+import { AccountingContactsResource } from './resources/accounting-contacts';
 import { AccountsDatevResource } from './resources/accounts-datev';
 import { BasicsResource } from './resources/basics';
 import { CheckAccountsResource } from './resources/check-accounts';
@@ -12,6 +13,7 @@ import { ExportsResource } from './resources/exports';
 import { InvoicesResource } from './resources/invoices';
 import { OrdersResource } from './resources/orders';
 import { PartsResource } from './resources/parts';
+import { PrivateTransactionRulesResource } from './resources/private-transaction-rules';
 import { ReceiptGuidanceResource } from './resources/receipt-guidance';
 import { ReportsResource } from './resources/reports';
 import { TagsResource } from './resources/tags';
@@ -19,6 +21,7 @@ import { TransactionsResource } from './resources/transactions';
 import { VouchersResource } from './resources/vouchers';
 
 export class SevDesk {
+  public readonly accountingContacts: AccountingContactsResource;
   public readonly accountsDatev: AccountsDatevResource;
   public readonly basics: BasicsResource;
   public readonly checkAccounts: CheckAccountsResource;
@@ -31,6 +34,7 @@ export class SevDesk {
   public readonly invoices: InvoicesResource;
   public readonly orders: OrdersResource;
   public readonly parts: PartsResource;
+  public readonly privateTransactionRules: PrivateTransactionRulesResource;
   public readonly receiptGuidance: ReceiptGuidanceResource;
   public readonly reports: ReportsResource;
   public readonly tags: TagsResource;
@@ -39,6 +43,7 @@ export class SevDesk {
 
   constructor(options: SevDeskOptions) {
     const http = new HttpClient(options);
+    this.accountingContacts = new AccountingContactsResource(http);
     this.accountsDatev = new AccountsDatevResource(http);
     this.basics = new BasicsResource(http);
     this.checkAccounts = new CheckAccountsResource(http);
@@ -51,6 +56,7 @@ export class SevDesk {
     this.invoices = new InvoicesResource(http);
     this.orders = new OrdersResource(http);
     this.parts = new PartsResource(http);
+    this.privateTransactionRules = new PrivateTransactionRulesResource(http);
     this.receiptGuidance = new ReceiptGuidanceResource(http);
     this.reports = new ReportsResource(http);
     this.tags = new TagsResource(http);

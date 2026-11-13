@@ -75,6 +75,20 @@ interface Identified {
   id: string;
 }
 
+/**
+ * The order of `GET /AccountingContact`: by contact ID, records without a
+ * contact first, ties by ID.
+ */
+export function byContactThenId(
+  a: Identified & { contact?: { id: string } | null },
+  b: Identified & { contact?: { id: string } | null },
+): number {
+  return (
+    Number(a.contact?.id ?? 0) - Number(b.contact?.id ?? 0) ||
+    Number(a.id) - Number(b.id)
+  );
+}
+
 /** The API's default order for most lists: newest ID first. */
 export function byIdDesc(a: Identified, b: Identified): number {
   return Number(b.id) - Number(a.id);

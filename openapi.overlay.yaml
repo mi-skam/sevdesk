@@ -257,6 +257,33 @@ actions:
       x-sevdesk-notes:
         - Cannot filter by contact. Fetch all pages and filter on `contact.id`.
 
+  # ------------------------------------------------------ /AccountingContact
+
+  - target: $.paths['/AccountingContact'].get
+    update:
+      parameters:
+        [
+          { $ref: '#/components/parameters/limit' },
+          { $ref: '#/components/parameters/offset' },
+        ]
+      x-sevdesk-default-order: contact id ascending; records without a contact first, by id ascending.
+  - target: $.components.schemas.Model_AccountingContactResponse.properties
+    description: Fields the API returns that the spec omits.
+    update:
+      contact:
+        description: >-
+          Missing entirely (not null) when the accounting contact belongs to a
+          bare name, such as a voucher supplier entered without a contact.
+          `contactName` carries the name then.
+      contactName:
+        type: string
+        nullable: true
+        description: Set only when `contact` is missing.
+      additionalInformation:
+        type: string
+        nullable: true
+        description: Always null in the records seen so far.
+
   # ------------------------------------------------------------ /Voucher
 
   - target: $.paths['/Voucher'].get
