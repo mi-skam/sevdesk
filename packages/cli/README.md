@@ -119,7 +119,7 @@ claude mcp add sevdesk -- sevdesk mcp --allow-writes   # plus draft-only writes
 - **Read-only by default**: every `list` and `get` command, `accounts:balance`, `guidance:accounts`, `numbering:get`, `doctor`, the layout and placeholder lists, and `db:info`, `db:history` and `db:sync` (which writes only the local database).
 - **`--allow-writes`** adds tools that create without changing anything booked: `vouchers:create` (always as a draft, status 50), `invoices:create` (a draft, never sent), `contacts:create` and `contacts:add-address`/`add-email`/`add-phone`, and `tags:create`. Your MCP client asks before each call.
 - **Never offered**: booking, enshrining, resetting, sending, deleting, updating existing records, layouts, PDFs, exports and anything else that writes files, `login`/`logout`.
-- Results are compact JSON without the Base64 thumbnails and PDFs of templates and letterpapers, and HTML fields (such as the head and foot texts of invoices) come back as plain text. A list longer than about 20,000 tokens is cut to the records that fit, with a note on how to page or filter for the rest.
+- Results are compact JSON without the Base64 thumbnails and PDFs of templates and letterpapers, HTML fields (such as the head and foot texts of invoices) come back as plain text, `null` fields and `sevClient` are left out, and a contact embedded in another record keeps only its id, name and customer number. A list longer than about 20,000 tokens is cut to the records that fit, with a note on how to page or filter for the rest.
 - Confirmation prompts of the CLI are answered by the client's tool approval, so writes run with `--yes`. A missing argument is an error, never a prompt.
 
 ## Scripting
@@ -322,7 +322,7 @@ sevdesk credit-notes:print [id] [options]
 
 ### `db:history`
 
-Show the change log of the local database, newest first: what each `db:sync` found new, changed (with the fields that changed, e.g. `status: 200 → 1000`), deleted or restored. The first sync of an entity logs nothing, since it has nothing to compare against. Makes no request.
+Show the change log of the local database, newest first, with a short label per record (number or name, amount, other party): what each `db:sync` found new, changed (with the fields that changed, e.g. `status: 200 → 1000`), deleted or restored. The first sync of an entity logs nothing, since it has nothing to compare against. Makes no request.
 
 ```bash
 sevdesk db:history [entity] [id] [options]

@@ -6,7 +6,7 @@ import { McpServer } from '../mcp/protocol';
 import { buildTools } from '../mcp/tools';
 import { pkg } from '../package';
 
-const INSTRUCTIONS = `Tools for a sevdesk accounting account (bookkeeping system 2.0), one per CLI command (vouchers_list = \`sevdesk vouchers:list\`). Results are the CLI's JSON output: every scalar is a string, ids included.
+const INSTRUCTIONS = `Tools for a sevdesk accounting account (bookkeeping system 2.0), one per CLI command (vouchers_list = \`sevdesk vouchers:list\`). Results are the CLI's JSON output, slimmed: every scalar is a string, ids included; fields that are null are left out, HTML texts come as plain text, and a contact embedded in another record keeps only its id, name and customer number (contacts_get has the full contact).
 
 - Prefer \`local: true\` on list/get tools: it answers from the local database without API requests. Run db_sync first when the database is missing or stale (db_info shows the last sync); db_history shows what syncs found changed.
 - List tools return all matching records unless \`limit\` is set. A result that would be too long is cut to the records that fit, with a note on how to page or filter for the rest; prefer filters and \`limit\` on large accounts.

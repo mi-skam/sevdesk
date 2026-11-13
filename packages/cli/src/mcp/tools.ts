@@ -133,25 +133,54 @@ export function htmlToText(value: string): string {
   );
 }
 
-/** Applies {@link htmlToText} to every string in a JSON value. */
-function plainText(value: unknown): unknown {
+/** What an embedded contact keeps: enough to name it and look it up. */
+const CONTACT_REFERENCE = [
+  'id',
+  'objectName',
+  'name',
+  'surename',
+  'familyname',
+  'customerNumber',
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Makes a result cheaper to read for a model without losing information it
+ * could not get back: strings lose their HTML ({@link htmlToText}), `null`
+ * fields and the account reference `sevClient` (the same everywhere) go, and
+ * a contact embedded in another record, such as an invoice's customer,
+ * shrinks to its id, name and customer number. A contact that is the result
+ * itself stays whole.
+ */
+export function slim(value: unknown, insideRecord = false): unknown {
   if (typeof value === 'string') {
     return htmlToText(value);
   }
   if (Array.isArray(value)) {
-    return value.map(plainText);
+    return value.map((entry) => slim(entry, insideRecord));
   }
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, plainText(entry)]),
-    );
+  if (!isRecord(value)) {
+    return value;
   }
-  return value;
+  const embeddedContact = insideRecord && value['objectName'] === 'Contact';
+  const isOwnRecord = typeof value['objectName'] === 'string';
+  const entries = Object.entries(value).filter(
+    ([key, entry]) =>
+      entry !== null &&
+      key !== 'sevClient' &&
+      (!embeddedContact || CONTACT_REFERENCE.includes(key)),
+  );
+  return Object.fromEntries(
+    entries.map(([key, entry]) => [key, slim(entry, isOwnRecord)]),
+  );
 }
 
 /**
  * Compacts JSON output (the CLI indents it), drops `omit` fields from each
- * record and cuts an array that is too long. Non-JSON output is cut as text.
+ * record, {@link slim}s it and cuts an array that is too long. Non-JSON output is cut as text.
  */
 export function shapeOutput(
   text: string,
@@ -180,9 +209,7 @@ export function shapeOutput(
     }
     return copy;
   };
-  const shaped = plainText(
-    Array.isArray(value) ? value.map(strip) : strip(value),
-  );
+  const shaped = slim(Array.isArray(value) ? value.map(strip) : strip(value));
   const compact = JSON.stringify(shaped);
   if (compact.length <= maxLength || !Array.isArray(shaped)) {
     return compact.length <= maxLength

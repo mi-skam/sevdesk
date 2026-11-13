@@ -11,6 +11,7 @@ import {
   htmlToText,
   pagingHint,
   shapeOutput,
+  slim,
   toolKind,
   toolWording,
   type Command,
@@ -386,6 +387,68 @@ describe('htmlToText', () => {
       text: JSON.stringify([
         { id: '1', headText: 'Hallo\nWelt', contact: { name: 'ACME' } },
       ]),
+    });
+  });
+});
+
+describe('slim', () => {
+  const contact = {
+    id: '7',
+    objectName: 'Contact',
+    name: 'ACME GmbH',
+    customerNumber: '1001',
+    surename: null,
+    vatNumber: 'DE123456789',
+    sevClient: { id: '1', objectName: 'SevClient' },
+  };
+
+  it('drops nulls and sevClient and shrinks embedded contacts', () => {
+    expect(
+      slim([
+        {
+          id: '1',
+          objectName: 'Invoice',
+          payDate: null,
+          sevClient: { id: '1', objectName: 'SevClient' },
+          contact,
+        },
+      ]),
+    ).toEqual([
+      {
+        id: '1',
+        objectName: 'Invoice',
+        contact: {
+          id: '7',
+          objectName: 'Contact',
+          name: 'ACME GmbH',
+          customerNumber: '1001',
+        },
+      },
+    ]);
+  });
+
+  it('keeps a contact that is the result itself', () => {
+    expect(slim({ contact, addresses: [] })).toEqual({
+      contact: {
+        id: '7',
+        objectName: 'Contact',
+        name: 'ACME GmbH',
+        customerNumber: '1001',
+        vatNumber: 'DE123456789',
+      },
+      addresses: [],
+    });
+    expect(slim([contact])).toEqual([
+      expect.objectContaining({ vatNumber: 'DE123456789' }),
+    ]);
+  });
+
+  it('keeps zeros, empty strings and false', () => {
+    expect(slim({ amount: '0', note: '', paid: false, count: 0 })).toEqual({
+      amount: '0',
+      note: '',
+      paid: false,
+      count: 0,
     });
   });
 });
