@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.4](https://github.com/mi-skam/sevdesk/compare/v0.4.3...v0.4.4) (2026-11-13)
+
+
+### Features
+
+* add a change log and db:history ([#33](https://github.com/mi-skam/sevdesk/issues/33)) ([6f41d13](https://github.com/mi-skam/sevdesk/commit/6f41d133e34a7086fdbde9d40c40eb104f052921))
+* add an MCP server (sevdesk mcp) ([#35](https://github.com/mi-skam/sevdesk/issues/35)) ([c8475d9](https://github.com/mi-skam/sevdesk/commit/c8475d9b7c16a76b32e361e61361b9621514fdfc))
+* add invoices:overdue and print a zero balance as 0 ([#37](https://github.com/mi-skam/sevdesk/issues/37)) ([862a076](https://github.com/mi-skam/sevdesk/commit/862a076d6f89995eaea09bd86d22663cb83b7833))
+
+
+### Bug Fixes
+
+* match invoice and order numbers ignoring case with --local ([#36](https://github.com/mi-skam/sevdesk/issues/36)) ([84302b8](https://github.com/mi-skam/sevdesk/commit/84302b8e390418d0d89f10e315b0e69d866eb47e))
+* register invoices:overdue ([#38](https://github.com/mi-skam/sevdesk/issues/38)) ([955cf5a](https://github.com/mi-skam/sevdesk/commit/955cf5a94976f6de5337b39a1c6e899f08274ff7))
+
 ## [0.4.3](https://github.com/mi-skam/sevdesk/compare/v0.4.2...v0.4.3) (2026-11-13)
 
 
