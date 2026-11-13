@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.2](https://github.com/mi-skam/sevdesk/compare/v0.4.1...v0.4.2) (2026-11-13)
+
+
+### Features
+
+* add accounting contacts and private transaction rules ([#26](https://github.com/mi-skam/sevdesk/issues/26)) ([37255d1](https://github.com/mi-skam/sevdesk/commit/37255d1e957f869be678ddff6ea9744a0bf68c86))
+* add contact custom fields and text placeholders ([#27](https://github.com/mi-skam/sevdesk/issues/27)) ([224a72c](https://github.com/mi-skam/sevdesk/commit/224a72c510bae65987fede8245aafd338b1e843e))
+* add layouts, changeParameter and credit note print ([#28](https://github.com/mi-skam/sevdesk/issues/28)) ([0ef1be9](https://github.com/mi-skam/sevdesk/commit/0ef1be9b21b54884a905b4ef7580eb5bc9e98139))
+
 ## [0.4.1](https://github.com/mi-skam/sevdesk/compare/v0.4.0...v0.4.1) (2026-11-12)
 
 
