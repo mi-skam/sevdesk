@@ -14,6 +14,7 @@ import type {
   ModelRefResponse,
 } from '../types';
 import { BaseResource } from './base';
+import type { ChangeLayoutOptions, ChangeLayoutResult } from './layouts';
 
 /**
  * Status of an invoice.
@@ -627,6 +628,20 @@ export class InvoicesResource extends BaseResource {
     return this.http.request<Invoice>({
       method: 'PUT',
       path: `/Invoice/${options.invoiceId}/resetToDraft`,
+    });
+  }
+
+  /**
+   * Changes the template, letterpaper, language or PayPal setting of an invoice via
+   * `PUT /Invoice/{invoiceId}/changeParameter` and re-renders it.
+   */
+  public changeParameter(
+    options: { invoiceId: number } & ChangeLayoutOptions,
+  ): Promise<ChangeLayoutResult> {
+    return this.http.request<ChangeLayoutResult>({
+      method: 'PUT',
+      path: `/Invoice/${options.invoiceId}/changeParameter`,
+      body: { key: options.key, value: options.value },
     });
   }
 }

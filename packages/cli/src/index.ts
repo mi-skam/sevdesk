@@ -35,8 +35,10 @@ import contactsList from './commands/contacts/list';
 import contactsUpdate from './commands/contacts/update';
 import contactsUpdateAddress from './commands/contacts/update-address';
 import creditNotesGet from './commands/credit-notes/get';
+import creditNotesLayout from './commands/credit-notes/layout';
 import creditNotesList from './commands/credit-notes/list';
 import creditNotesPdf from './commands/credit-notes/pdf';
+import creditNotesPrint from './commands/credit-notes/print';
 import dbInfo from './commands/db/info';
 import dbSync from './commands/db/sync';
 import doctor from './commands/doctor';
@@ -49,14 +51,18 @@ import guidanceAccounts from './commands/guidance/accounts';
 import invoicesCreate from './commands/invoices/create';
 import invoicesDelete from './commands/invoices/delete';
 import invoicesGet from './commands/invoices/get';
+import invoicesLayout from './commands/invoices/layout';
 import invoicesList from './commands/invoices/list';
 import invoicesPdf from './commands/invoices/pdf';
 import invoicesSend from './commands/invoices/send';
 import invoicesUpdate from './commands/invoices/update';
+import layoutsLetterpapers from './commands/layouts/letterpapers';
+import layoutsTemplates from './commands/layouts/templates';
 import login from './commands/login';
 import logout from './commands/logout';
 import numberingGet from './commands/numbering/get';
 import ordersGet from './commands/orders/get';
+import ordersLayout from './commands/orders/layout';
 import ordersList from './commands/orders/list';
 import ordersPdf from './commands/orders/pdf';
 import partsGet from './commands/parts/get';
@@ -137,7 +143,9 @@ const config = defineConfig({
     'contacts:update-address': contactsUpdateAddress,
     'credit-notes:get': creditNotesGet,
     'credit-notes:list': creditNotesList,
+    'credit-notes:layout': creditNotesLayout,
     'credit-notes:pdf': creditNotesPdf,
+    'credit-notes:print': creditNotesPrint,
     'export:contacts': exportContacts,
     'export:datev': exportDatev,
     'export:invoices': exportInvoices,
@@ -149,10 +157,14 @@ const config = defineConfig({
     'invoices:send': invoicesSend,
     'invoices:update': invoicesUpdate,
     'invoices:get': invoicesGet,
+    'invoices:layout': invoicesLayout,
     'invoices:list': invoicesList,
     'invoices:pdf': invoicesPdf,
+    'layouts:letterpapers': layoutsLetterpapers,
+    'layouts:templates': layoutsTemplates,
     'numbering:get': numberingGet,
     'orders:get': ordersGet,
+    'orders:layout': ordersLayout,
     'orders:list': ordersList,
     'orders:pdf': ordersPdf,
     'parts:get': partsGet,

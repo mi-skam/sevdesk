@@ -15,6 +15,7 @@ import { CreditNotesResource } from './resources/credit-notes';
 import { DocumentsResource } from './resources/documents';
 import { ExportsResource } from './resources/exports';
 import { InvoicesResource } from './resources/invoices';
+import { LayoutsResource } from './resources/layouts';
 import { OrdersResource } from './resources/orders';
 import { PartsResource } from './resources/parts';
 import { PrivateTransactionRulesResource } from './resources/private-transaction-rules';
@@ -39,6 +40,7 @@ export class SevDesk {
   public readonly documents: DocumentsResource;
   public readonly exports: ExportsResource;
   public readonly invoices: InvoicesResource;
+  public readonly layouts: LayoutsResource;
   public readonly orders: OrdersResource;
   public readonly parts: PartsResource;
   public readonly privateTransactionRules: PrivateTransactionRulesResource;
@@ -66,6 +68,7 @@ export class SevDesk {
     this.documents = new DocumentsResource(http);
     this.exports = new ExportsResource(http);
     this.invoices = new InvoicesResource(http);
+    this.layouts = new LayoutsResource(http);
     this.orders = new OrdersResource(http);
     this.parts = new PartsResource(http);
     this.privateTransactionRules = new PrivateTransactionRulesResource(http);

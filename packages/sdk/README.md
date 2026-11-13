@@ -89,6 +89,7 @@ await sevdesk.vouchers.book({
 | `sevdesk.documents`                  | Download the files attached to vouchers.                                                                            |
 | `sevdesk.exports`                    | Run DATEV export jobs and CSV exports.                                                                              |
 | `sevdesk.invoices`                   | Create/partially update drafts (`save`), delete (`delete`), email (`sendViaEmail`), render PDFs, and book payments. |
+| `sevdesk.layouts`                    | List document templates and letterpapers (`changeParameter` on invoices, orders and credit notes applies them).     |
 | `sevdesk.orders`                     | Manage orders and their positions.                                                                                  |
 | `sevdesk.parts`                      | Manage parts and query stock.                                                                                       |
 | `sevdesk.privateTransactionRules`    | Manage the rules that mark bank transactions as private.                                                            |
