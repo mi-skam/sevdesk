@@ -24,6 +24,7 @@ const READS = new Set([
   'db:info',
   'doctor',
   'guidance:accounts',
+  'invoices:overdue',
   'layouts:letterpapers',
   'layouts:templates',
   'numbering:get',

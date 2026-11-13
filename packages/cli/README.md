@@ -116,7 +116,7 @@ claude mcp add sevdesk -- sevdesk mcp                  # read-only
 claude mcp add sevdesk -- sevdesk mcp --allow-writes   # plus draft-only writes
 ```
 
-- **Read-only by default**: every `list` and `get` command, `accounts:balance`, `guidance:accounts`, `numbering:get`, `doctor`, the layout and placeholder lists, and `db:info`, `db:history` and `db:sync` (which writes only the local database).
+- **Read-only by default**: every `list` and `get` command, `accounts:balance`, `guidance:accounts`, `invoices:overdue`, `numbering:get`, `doctor`, the layout and placeholder lists, and `db:info`, `db:history` and `db:sync` (which writes only the local database).
 - **`--allow-writes`** adds tools that create without changing anything booked: `vouchers:create` (always as a draft, status 50), `invoices:create` (a draft, never sent), `contacts:create` and `contacts:add-address`/`add-email`/`add-phone`, and `tags:create`. Your MCP client asks before each call.
 - **Never offered**: booking, enshrining, resetting, sending, deleting, updating existing records, layouts, PDFs, exports and anything else that writes files, `login`/`logout`.
 - Results are compact JSON without the Base64 thumbnails and PDFs of templates and letterpapers, HTML fields (such as the head and foot texts of invoices) come back as plain text, `null` fields and `sevClient` are left out, and a contact embedded in another record keeps only its id, name and customer number. A list longer than about 20,000 tokens is cut to the records that fit, with a note on how to page or filter for the rest.
