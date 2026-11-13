@@ -37,6 +37,23 @@ describe('AccountingContactsResource', () => {
     );
   });
 
+  it('embeds related objects', async () => {
+    const fetch = createMockFetch({ objects: [{ id: '3' }] });
+
+    await createResource(fetch).list({ embed: ['contact'] });
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/AccountingContact?embed=contact`,
+    );
+
+    await createResource(fetch).get({
+      accountingContactId: 3,
+      embed: ['contact'],
+    });
+    expect(lastRequest(fetch).url).toBe(
+      `${BASE_URL}/AccountingContact/3?embed=contact`,
+    );
+  });
+
   it('unwraps a single accounting contact', async () => {
     const fetch = createMockFetch({ objects: [{ id: '3' }] });
 

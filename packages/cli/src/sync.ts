@@ -51,7 +51,8 @@ export const ENTITIES: readonly EntityDefinition[] = [
   {
     name: 'accounting-contacts',
     incremental: false,
-    fetchPage: (client, page) => client.accountingContacts.list(page),
+    fetchPage: (client, page) =>
+      client.accountingContacts.list({ embed: ['contact'], ...page }),
   },
   {
     name: 'contact-field-settings',

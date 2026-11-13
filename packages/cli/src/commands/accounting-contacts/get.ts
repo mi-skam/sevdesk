@@ -5,7 +5,7 @@ import { defineCommand, defineOptions } from 'zodline';
 import { idArgument, requireIdArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { localOption, readLocalRecord } from '../../local';
-import { printJson } from '../../output';
+import { contactLabel, printJson } from '../../output';
 
 export default defineCommand({
   description: 'Show a single accounting contact.',
@@ -34,14 +34,18 @@ export default defineCommand({
         )
       : await (
           await requireClient()
-        ).accountingContacts.get({ accountingContactId });
+        ).accountingContacts.get({ accountingContactId, embed: ['contact'] });
     if (options.json) {
       printJson(accountingContact);
       return;
     }
     consola.info(`ID: ${accountingContact.id}`);
     consola.info(
-      `Contact: ${accountingContact.contact?.id ?? accountingContact.contactName ?? '-'}`,
+      `Contact: ${
+        accountingContact.contact
+          ? `${contactLabel(accountingContact.contact)} (${accountingContact.contact.id})`
+          : (accountingContact.contactName ?? '-')
+      }`,
     );
     consola.info(`Debitor number: ${accountingContact.debitorNumber ?? '-'}`);
     consola.info(`Creditor number: ${accountingContact.creditorNumber ?? '-'}`);

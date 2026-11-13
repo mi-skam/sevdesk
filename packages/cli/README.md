@@ -359,7 +359,7 @@ sevdesk accounting-contacts:get [id] [options]
 
 ### `accounting-contacts:list`
 
-List accounting contacts: the debitor and creditor numbers of contacts. Accounting contacts that belong to a bare name rather than a contact (for example a voucher supplier entered without one) have no `contact` but a `contactName`; they come first, then the rest by contact ID.
+List accounting contacts: the debitor and creditor numbers of contacts. Accounting contacts that belong to a bare name rather than a contact (for example a voucher supplier entered without one) have no `contact` but a `contactName`; they come first, then the rest by contact ID. The table shows the contact's name, or the bare name.
 
 ```bash
 sevdesk accounting-contacts:list [options]
