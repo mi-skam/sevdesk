@@ -222,6 +222,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`invoices:get`](#invoicesget)
 - [`invoices:layout`](#invoiceslayout)
 - [`invoices:list`](#invoiceslist)
+- [`invoices:overdue`](#invoicesoverdue)
 - [`invoices:pdf`](#invoicespdf)
 - [`layouts:letterpapers`](#layoutsletterpapers)
 - [`layouts:templates`](#layoutstemplates)
@@ -1307,6 +1308,21 @@ the number and all matching draft IDs. With `--json`, duplicates return
 `{ invoices, warnings }`, even without `--drafts`. Otherwise the legacy JSON array
 is preserved; use `--drafts --json` for a stable warnings envelope. Limits, offsets,
 and other filters restrict duplicate detection; omit them for a complete check.
+
+### `invoices:overdue`
+
+List open and partially paid invoices (status 200 and 750) whose due date has passed, most overdue first, with the amount still open. The due date is the invoice date plus its payment term (`timeToPay`) in German time; an invoice is overdue from the day after. Reminders and recurring invoices are left out, as in `invoices:list`.
+
+```bash
+sevdesk invoices:overdue [options]
+```
+
+**Options:**
+
+- `--date`: The day to check against, as `YYYY-MM-DD` or `dd.mm.yyyy`. Defaults to today in German time.
+- `--contact`: ID of the contact whose invoices to check.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format: per invoice `dueDate`, `daysOverdue`, `paidAmount` and `openAmount`.
 
 ### `invoices:pdf`
 

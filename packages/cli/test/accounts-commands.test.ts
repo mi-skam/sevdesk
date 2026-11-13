@@ -100,6 +100,19 @@ describe('check account commands', () => {
     expect(info).toHaveBeenCalledWith('Balance at 2024-01-31: 123.45');
   });
 
+  it('shows a balance of -0 from the API as 0', async () => {
+    respondWith('-0');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await balance.action({ date: '2024-01-31', json: true }, [7]);
+
+    expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toEqual({
+      checkAccountId: 7,
+      date: '2024-01-31',
+      balance: '0',
+    });
+  });
+
   it('creates a clearing account', async () => {
     respondWith(checkAccount);
     const success = vi.spyOn(consola, 'success').mockImplementation(() => {});
