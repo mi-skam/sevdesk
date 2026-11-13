@@ -13,6 +13,7 @@ import type {
   ModelRefResponse,
 } from '../types';
 import { BaseResource } from './base';
+import type { ChangeLayoutOptions, ChangeLayoutResult } from './layouts';
 
 /**
  * Status of an order.
@@ -542,6 +543,20 @@ export class OrdersResource extends BaseResource {
     await this.http.request<void>({
       method: 'DELETE',
       path: `/OrderPos/${options.orderPosId}`,
+    });
+  }
+
+  /**
+   * Changes the template, letterpaper, language or PayPal setting of an order via
+   * `PUT /Order/{orderId}/changeParameter` and re-renders it.
+   */
+  public changeParameter(
+    options: { orderId: number } & ChangeLayoutOptions,
+  ): Promise<ChangeLayoutResult> {
+    return this.http.request<ChangeLayoutResult>({
+      method: 'PUT',
+      path: `/Order/${options.orderId}/changeParameter`,
+      body: { key: options.key, value: options.value },
     });
   }
 }

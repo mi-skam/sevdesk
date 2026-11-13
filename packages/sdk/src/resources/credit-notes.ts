@@ -12,6 +12,7 @@ import type {
   ModelRefResponse,
 } from '../types';
 import { BaseResource } from './base';
+import type { ChangeLayoutOptions, ChangeLayoutResult } from './layouts';
 
 /**
  * Status of a credit note.
@@ -272,6 +273,20 @@ export interface CreditNotePdf {
   content: string;
 }
 
+/** Result of `sendByWithRender`. */
+export interface RenderCreditNoteResult {
+  /** The whole document as Base64-encoded PDF. */
+  pdf: string;
+  docId: string;
+  parameters: Array<{
+    key: string;
+    name: string;
+    values: Array<{ name: string; translationCade: string; value: string }>;
+    visible: boolean;
+    value: string;
+  }>;
+}
+
 export interface SaveCreditNoteResult {
   creditNote: CreditNote;
   positions: CreditNotePosition[];
@@ -517,6 +532,36 @@ export class CreditNotesResource extends BaseResource {
         offset,
         embed,
       },
+    });
+  }
+
+  /**
+   * Changes the template, letterpaper, language or PayPal setting of a credit note via
+   * `PUT /CreditNote/{creditNoteId}/changeParameter` and re-renders it.
+   */
+  public changeParameter(
+    options: { creditNoteId: number } & ChangeLayoutOptions,
+  ): Promise<ChangeLayoutResult> {
+    return this.http.request<ChangeLayoutResult>({
+      method: 'PUT',
+      path: `/CreditNote/${options.creditNoteId}/changeParameter`,
+      body: { key: options.key, value: options.value },
+    });
+  }
+
+  /**
+   * Renders a credit note and marks it as sent with `sendType` via
+   * `GET /CreditNote/{creditNoteId}/sendByWithRender`. Despite the `GET`, this
+   * changes the credit note.
+   */
+  public sendByWithRender(options: {
+    creditNoteId: number;
+    sendType: CreditNoteSendType;
+  }): Promise<RenderCreditNoteResult> {
+    return this.http.request<RenderCreditNoteResult>({
+      method: 'GET',
+      path: `/CreditNote/${options.creditNoteId}/sendByWithRender`,
+      query: { sendType: options.sendType },
     });
   }
 }

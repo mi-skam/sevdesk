@@ -313,6 +313,34 @@ actions:
           { $ref: '#/components/parameters/offset' },
         ]
 
+  # ------------------------------------------------------------- /DocServer
+
+  - target: $.paths['/DocServer/getTemplatesWithThumb'].get.parameters[?(@.name == 'type')].schema.enum[1]
+    description: Remove `invoicereminder` (index 1 upstream), which matches nothing.
+    remove: true
+  - target: $.paths['/DocServer/getTemplatesWithThumb'].get.parameters[?(@.name == 'type')].schema
+    description: The filter is case-sensitive; the reminder type is spelled Invoicereminder.
+    update:
+      enum: [Invoicereminder]
+  - target: $.paths['/DocServer/getTemplatesWithThumb'].get.parameters[?(@.name == 'type')]
+    update:
+      description: Type of the templates. Case-sensitive; `invoicereminder` matches nothing, use `Invoicereminder`.
+  - target: $.paths['/DocServer/getTemplatesWithThumb'].get
+    update:
+      x-sevdesk-notes:
+        - The response has no `objects` envelope.
+        - '`default` comes back as a boolean or a number.'
+        - Templates also carry isCustom, img (Base64 thumbnail), inactive, structure and pdfreactorVersion.
+  - target: $.paths['/DocServer/getLetterpapersWithThumb'].get
+    update:
+      x-sevdesk-notes:
+        - The response has no `objects` envelope.
+        - Letterpapers also carry isCustom.
+  - target: $.paths['/CreditNote/{creditNoteId}/sendByWithRender'].get
+    update:
+      x-sevdesk-notes:
+        - Unverified. Despite the GET, the name and the sibling sendBy endpoint indicate that it marks the credit note as sent.
+
   # ------------------------------------------------------------ /Voucher
 
   - target: $.paths['/Voucher'].get

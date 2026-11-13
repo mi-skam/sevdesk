@@ -19,6 +19,7 @@ export * from './resources/credit-notes';
 export * from './resources/documents';
 export * from './resources/exports';
 export * from './resources/invoices';
+export * from './resources/layouts';
 export * from './resources/orders';
 export * from './resources/parts';
 export * from './resources/private-transaction-rules';

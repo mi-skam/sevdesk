@@ -148,6 +148,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`login`](#login)
 - [`logout`](#logout)
 - [`doctor`](#doctor)
+- [`credit-notes:print`](#credit-notesprint)
 - [`db:info`](#dbinfo)
 - [`db:sync`](#dbsync)
 - [`accounting-contacts:create`](#accounting-contactscreate)
@@ -184,6 +185,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`contacts:update`](#contactsupdate)
 - [`contacts:update-address`](#contactsupdate-address)
 - [`credit-notes:get`](#credit-notesget)
+- [`credit-notes:layout`](#credit-noteslayout)
 - [`credit-notes:list`](#credit-noteslist)
 - [`credit-notes:pdf`](#credit-notespdf)
 - [`export:contacts`](#exportcontacts)
@@ -197,10 +199,14 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`invoices:send`](#invoicessend)
 - [`invoices:update`](#invoicesupdate)
 - [`invoices:get`](#invoicesget)
+- [`invoices:layout`](#invoiceslayout)
 - [`invoices:list`](#invoiceslist)
 - [`invoices:pdf`](#invoicespdf)
+- [`layouts:letterpapers`](#layoutsletterpapers)
+- [`layouts:templates`](#layoutstemplates)
 - [`numbering:get`](#numberingget)
 - [`orders:get`](#ordersget)
+- [`orders:layout`](#orderslayout)
 - [`orders:list`](#orderslist)
 - [`orders:pdf`](#orderspdf)
 - [`parts:get`](#partsget)
@@ -262,6 +268,23 @@ sevdesk doctor [options]
 
 **Options:**
 
+- `--json`: Output in JSON format.
+
+### `credit-notes:print`
+
+Render a credit note to a PDF file and **mark it as sent**, by default as printed (`VPR`). Use `credit-notes:pdf` to download it without marking it.
+
+```bash
+sevdesk credit-notes:print [id] [options]
+```
+
+**Argument:** `id` — ID of the credit note. If omitted, you will be prompted.
+
+**Options:**
+
+- `--send-type`: How it was sent: `VPR` printed, `VP` postal, `VM` mailed, `VPDF` downloaded. Defaults to `VPR`.
+- `--output`: Path to write the PDF to. Defaults to `credit-note-<id>.pdf`.
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
 ### `db:info`
@@ -836,6 +859,24 @@ sevdesk credit-notes:get [id] [options]
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `credit-notes:layout`
+
+Change the template, letterpaper, language or PayPal setting of a credit note. Each given option is one `changeParameter` request; find IDs with `layouts:templates` and `layouts:letterpapers`. The re-rendered PDF is not printed; download it with the pdf command.
+
+```bash
+sevdesk credit-notes:layout [id] [options]
+```
+
+**Argument:** `id` — The credit note ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--template`: Template ID.
+- `--letterpaper`: Letterpaper ID.
+- `--language`: Document language, for example `de_DE` or `en_US`.
+- `--paypal`: PayPal setting value.
+- `--json`: Output in JSON format.
+
 ### `credit-notes:list`
 
 List credit notes.
@@ -1166,6 +1207,24 @@ sevdesk invoices:get [id] [options]
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `invoices:layout`
+
+Change the template, letterpaper, language or PayPal setting of an invoice. Each given option is one `changeParameter` request; find IDs with `layouts:templates` and `layouts:letterpapers`. The re-rendered PDF is not printed; download it with the pdf command.
+
+```bash
+sevdesk invoices:layout [id] [options]
+```
+
+**Argument:** `id` — The invoice ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--template`: Template ID.
+- `--letterpaper`: Letterpaper ID.
+- `--language`: Document language, for example `de_DE` or `en_US`.
+- `--paypal`: PayPal setting value.
+- `--json`: Output in JSON format.
+
 ### `invoices:list`
 
 List invoices.
@@ -1213,6 +1272,31 @@ sevdesk invoices:pdf [id] [options]
 - `--prevent-send-by`: Do not mark the invoice as sent by download. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `layouts:letterpapers`
+
+List the letterpapers.
+
+```bash
+sevdesk layouts:letterpapers [options]
+```
+
+**Options:**
+
+- `--json`: Output in JSON format, including the Base64 PDF and thumbnail.
+
+### `layouts:templates`
+
+List the document templates. The type filter is case-sensitive.
+
+```bash
+sevdesk layouts:templates [options]
+```
+
+**Options:**
+
+- `--type`: Only templates of this type: `Invoice`, `Invoicereminder`, `Order`, `Contractnote`, `Packinglist`, `Letter`, `Creditnote`.
+- `--json`: Output in JSON format, including the template HTML and thumbnail.
+
 ### `numbering:get`
 
 Read invoice or quote numbering configuration (Nummernkreis) without reserving
@@ -1250,6 +1334,24 @@ sevdesk orders:get [id] [options]
 **Options:**
 
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `orders:layout`
+
+Change the template, letterpaper, language or PayPal setting of an order. Each given option is one `changeParameter` request; find IDs with `layouts:templates` and `layouts:letterpapers`. The re-rendered PDF is not printed; download it with the pdf command.
+
+```bash
+sevdesk orders:layout [id] [options]
+```
+
+**Argument:** `id` — The order ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--template`: Template ID.
+- `--letterpaper`: Letterpaper ID.
+- `--language`: Document language, for example `de_DE` or `en_US`.
+- `--paypal`: PayPal setting value.
 - `--json`: Output in JSON format.
 
 ### `orders:list`
