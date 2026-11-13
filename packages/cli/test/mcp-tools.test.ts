@@ -443,6 +443,24 @@ describe('slim', () => {
     ]);
   });
 
+  it('shrinks the contact in a computed row with an id', () => {
+    expect(
+      slim([{ id: '1', invoiceNumber: 'RE-1', contact, openAmount: '119' }]),
+    ).toEqual([
+      {
+        id: '1',
+        invoiceNumber: 'RE-1',
+        contact: {
+          id: '7',
+          objectName: 'Contact',
+          name: 'ACME GmbH',
+          customerNumber: '1001',
+        },
+        openAmount: '119',
+      },
+    ]);
+  });
+
   it('keeps zeros, empty strings and false', () => {
     expect(slim({ amount: '0', note: '', paid: false, count: 0 })).toEqual({
       amount: '0',
