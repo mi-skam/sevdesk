@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/mi-skam/sevdesk/compare/v0.4.4...v0.4.5) (2026-11-13)
+
+
+### Bug Fixes
+
+* **mcp:** shorten contacts in computed rows too ([#39](https://github.com/mi-skam/sevdesk/issues/39)) ([24a5b12](https://github.com/mi-skam/sevdesk/commit/24a5b1234f1ea05f3c7d7c0071a4457140bad08c))
+
 ## [0.4.4](https://github.com/mi-skam/sevdesk/compare/v0.4.3...v0.4.4) (2026-11-13)
 
 
