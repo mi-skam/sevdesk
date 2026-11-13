@@ -1,6 +1,6 @@
 {
   "name": "@mi-skam/sevdesk",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Unofficial command-line interface for the sevdesk API.",
   "type": "module",
   "bin": {
@@ -19,7 +19,7 @@
     "test:terminal": "python3 test/quotes-terminal.test.py"
   },
   "dependencies": {
-    "@mi-skam/sevdesk-sdk": "0.4.3",
+    "@mi-skam/sevdesk-sdk": "0.4.4",
     "consola": "3.4.2",
     "decimal.js": "10.6.0",
     "zod": "4.6.7",
