@@ -54,6 +54,16 @@ export const ENTITIES: readonly EntityDefinition[] = [
     fetchPage: (client, page) => client.accountingContacts.list(page),
   },
   {
+    name: 'contact-field-settings',
+    incremental: false,
+    fetchPage: (client, page) => client.contactCustomFieldSettings.list(page),
+  },
+  {
+    name: 'contact-fields',
+    incremental: false,
+    fetchPage: (client, page) => client.contactCustomFields.list(page),
+  },
+  {
     name: 'contact-addresses',
     incremental: false,
     fetchPage: (client, page) => client.contactAddresses.list(page),
