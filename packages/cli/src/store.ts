@@ -50,8 +50,30 @@ const SCHEMA_V1 = `
   );
 `;
 
+/**
+ * The change log: one row per change a sync saw — a record that appeared, a
+ * stored record whose data differs, one a full sync no longer saw, or one
+ * seen again after that. `previous` and `data` are the record before and
+ * after (`previous` is null for `new`, `data` for `deleted`). Changes that
+ * happen and are superseded between two syncs are not in the log, and the
+ * first sync of an entity logs nothing: it has nothing to compare against.
+ */
+const SCHEMA_V2 = `
+  CREATE TABLE changes (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity TEXT NOT NULL,
+    id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('new', 'updated', 'deleted', 'restored')),
+    previous TEXT,
+    data TEXT,
+    recorded_at TEXT NOT NULL
+  );
+  CREATE INDEX changes_record ON changes (entity, id);
+  CREATE INDEX changes_recorded_at ON changes (recorded_at);
+`;
+
 /** `MIGRATIONS[n]` brings a database from schema version `n` to `n + 1`. */
-const MIGRATIONS = [SCHEMA_V1];
+const MIGRATIONS = [SCHEMA_V1, SCHEMA_V2];
 const SCHEMA_VERSION = MIGRATIONS.length;
 
 /** A record as the API returns it: every entity has a string `id`. */
@@ -65,6 +87,29 @@ export interface UpsertResult {
   inserted: number;
   updated: number;
   unchanged: number;
+}
+
+export type ChangeKind = 'new' | 'updated' | 'deleted' | 'restored';
+
+/** One entry of the change log. */
+export interface Change {
+  seq: number;
+  entity: string;
+  id: string;
+  kind: ChangeKind;
+  /** The record before the change; `null` for `new`. */
+  previous: unknown;
+  /** The record after the change; `null` for `deleted`. */
+  data: unknown;
+  recordedAt: string;
+}
+
+export interface ChangeQuery {
+  entity?: string;
+  id?: string;
+  /** Only changes recorded at or after this ISO timestamp. */
+  since?: string;
+  limit?: number;
 }
 
 export interface SyncState {
@@ -85,6 +130,8 @@ export interface StoreInfo {
   path: string;
   bytes: number;
   lastSync: string | null;
+  /** Entries in the change log. */
+  changes: number;
   entities: EntityInfo[];
 }
 
@@ -203,12 +250,14 @@ export class Store {
 
   /**
    * Inserts new records and replaces stored ones whose data changed. A record
-   * that was marked deleted and is seen again is restored.
+   * that was marked deleted and is seen again is restored. With `log`, every
+   * such change is also written to the change log.
    */
   upsert(
     entity: string,
     records: StoredRecord[],
     syncedAt: Date,
+    options: { log?: boolean } = {},
   ): UpsertResult {
     const existing = this.db.prepare(
       'SELECT data, deleted_at FROM records WHERE entity = ? AND id = ?',
@@ -238,6 +287,21 @@ export class Store {
         data,
         isoTimestamp(syncedAt),
       );
+      if (options.log) {
+        const kind: ChangeKind = !stored
+          ? 'new'
+          : stored.deleted_at === null
+            ? 'updated'
+            : 'restored';
+        this.logChange(
+          entity,
+          record.id,
+          kind,
+          stored?.data ?? null,
+          data,
+          syncedAt,
+        );
+      }
       if (stored) {
         result.updated += 1;
       } else {
@@ -255,21 +319,90 @@ export class Store {
     entity: string,
     seenIds: ReadonlySet<string>,
     now: Date,
+    options: { log?: boolean } = {},
   ): number {
     const live = this.db
-      .prepare('SELECT id FROM records WHERE entity = ? AND deleted_at IS NULL')
-      .all(entity) as Array<{ id: string }>;
+      .prepare(
+        'SELECT id, data FROM records WHERE entity = ? AND deleted_at IS NULL',
+      )
+      .all(entity) as Array<{ id: string; data: string }>;
     const mark = this.db.prepare(
       'UPDATE records SET deleted_at = ? WHERE entity = ? AND id = ?',
     );
     let deleted = 0;
-    for (const { id } of live) {
+    for (const { id, data } of live) {
       if (!seenIds.has(id)) {
         mark.run(isoTimestamp(now), entity, id);
+        if (options.log) {
+          this.logChange(entity, id, 'deleted', data, null, now);
+        }
         deleted += 1;
       }
     }
     return deleted;
+  }
+
+  private logChange(
+    entity: string,
+    id: string,
+    kind: ChangeKind,
+    previous: string | null,
+    data: string | null,
+    recordedAt: Date,
+  ): void {
+    this.db
+      .prepare(
+        `INSERT INTO changes (entity, id, kind, previous, data, recorded_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(entity, id, kind, previous, data, isoTimestamp(recordedAt));
+  }
+
+  /** Change log entries matching `query`, newest first. */
+  changes(query: ChangeQuery = {}): Change[] {
+    const where: string[] = [];
+    const params: string[] = [];
+    if (query.entity !== undefined) {
+      where.push('entity = ?');
+      params.push(query.entity);
+    }
+    if (query.id !== undefined) {
+      where.push('id = ?');
+      params.push(query.id);
+    }
+    if (query.since !== undefined) {
+      where.push('recorded_at >= ?');
+      params.push(query.since);
+    }
+    const limit =
+      query.limit === undefined
+        ? ''
+        : ` LIMIT ${Math.max(0, Math.floor(query.limit))}`;
+    const rows = this.db
+      .prepare(
+        `SELECT seq, entity, id, kind, previous, data, recorded_at FROM changes
+         ${where.length > 0 ? `WHERE ${where.join(' AND ')}` : ''}
+         ORDER BY seq DESC${limit}`,
+      )
+      .all(...params) as Array<{
+      seq: number;
+      entity: string;
+      id: string;
+      kind: ChangeKind;
+      previous: string | null;
+      data: string | null;
+      recorded_at: string;
+    }>;
+    return rows.map((row) => ({
+      seq: row.seq,
+      entity: row.entity,
+      id: row.id,
+      kind: row.kind,
+      previous:
+        row.previous === null ? null : (JSON.parse(row.previous) as unknown),
+      data: row.data === null ? null : (JSON.parse(row.data) as unknown),
+      recordedAt: row.recorded_at,
+    }));
   }
 
   /** Stored records of an entity in ascending ID order, live ones only by default. */
@@ -373,6 +506,11 @@ export class Store {
       path: this.path,
       bytes: (await stat(this.path)).size,
       lastSync: this.getMeta('last_sync'),
+      changes: (
+        this.db.prepare('SELECT COUNT(*) AS count FROM changes').get() as {
+          count: number;
+        }
+      ).count,
       entities: rows.map((row) => ({
         entity: row.entity,
         records: row.live,

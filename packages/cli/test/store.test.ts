@@ -219,6 +219,90 @@ describe('Store', () => {
     });
   });
 
+  it('logs changes only when asked, newest first', async () => {
+    await withStore({ create: true, path }, (store) => {
+      store.upsert('vouchers', [voucher('1', '2026-01-01T10:00:00Z')], t0);
+      expect(store.changes()).toEqual([]);
+
+      store.upsert(
+        'vouchers',
+        [
+          voucher('1', '2026-01-02T10:00:00Z', 'RE-2'),
+          voucher('2', '2026-01-02T10:00:00Z'),
+        ],
+        t1,
+        { log: true },
+      );
+      store.markMissingDeleted('vouchers', new Set(['2']), t1, { log: true });
+      store.upsert(
+        'vouchers',
+        [voucher('1', '2026-01-02T10:00:00Z', 'RE-2')],
+        t1,
+        {
+          log: true,
+        },
+      );
+
+      const changes = store.changes();
+      expect(changes.map((c) => [c.id, c.kind])).toEqual([
+        ['1', 'restored'],
+        ['1', 'deleted'],
+        ['2', 'new'],
+        ['1', 'updated'],
+      ]);
+      const updated = changes[3]!;
+      expect(updated).toMatchObject({
+        entity: 'vouchers',
+        previous: { description: 'RE-1' },
+        data: { description: 'RE-2' },
+        recordedAt: t1.toISOString(),
+      });
+      expect(changes[1]).toMatchObject({
+        previous: { description: 'RE-2' },
+        data: null,
+      });
+      expect(changes[2]?.previous).toBeNull();
+    });
+  });
+
+  it('filters the change log', async () => {
+    await withStore({ create: true, path }, (store) => {
+      store.upsert('vouchers', [voucher('1', '2026-01-01T10:00:00Z')], t0, {
+        log: true,
+      });
+      store.upsert('tags', [{ id: '1' }], t1, { log: true });
+      store.upsert('vouchers', [voucher('2', '2026-01-01T10:00:00Z')], t1, {
+        log: true,
+      });
+
+      const ids = (query: Parameters<Store['changes']>[0]) =>
+        store.changes(query).map((c) => `${c.entity}/${c.id}`);
+      expect(ids({ entity: 'vouchers' })).toEqual(['vouchers/2', 'vouchers/1']);
+      expect(ids({ entity: 'vouchers', id: '1' })).toEqual(['vouchers/1']);
+      expect(ids({ since: t1.toISOString() })).toEqual([
+        'vouchers/2',
+        'tags/1',
+      ]);
+      expect(ids({ limit: 1 })).toEqual(['vouchers/2']);
+    });
+  });
+
+  it('adds the change log to a version 1 database and keeps its records', async () => {
+    await withStore({ create: true, path }, (store) => {
+      store.upsert('vouchers', [voucher('1', '2026-01-01T10:00:00Z')], t0);
+    });
+    const { DatabaseSync } = await import('node:sqlite');
+    const raw = new DatabaseSync(path);
+    raw.exec('DROP TABLE changes; PRAGMA user_version = 1');
+    raw.close();
+
+    await withStore({ create: false, path }, async (store) => {
+      expect(store.record('vouchers', '1')).not.toBeNull();
+      expect(store.changes()).toEqual([]);
+      expect((await store.info()).changes).toBe(0);
+    });
+  });
+
   it('refuses a database from a newer version', async () => {
     await withStore({ create: true, path }, () => undefined);
     const { DatabaseSync } = await import('node:sqlite');

@@ -263,13 +263,16 @@ export async function syncStore(
 
   const entities = store.transaction(() => {
     const results = fetched.map(({ definition, mode, records }) => {
-      const written = store.upsert(definition.name, records, now);
+      // The first sync of an entity has nothing to compare against.
+      const log = store.syncState(definition.name) !== null;
+      const written = store.upsert(definition.name, records, now, { log });
       const deleted =
         mode === 'full'
           ? store.markMissingDeleted(
               definition.name,
               new Set(records.map((record) => record.id)),
               now,
+              { log },
             )
           : 0;
       const previous = store.syncState(definition.name);

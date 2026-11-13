@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import history from '../src/commands/db/history';
 import info from '../src/commands/db/info';
 import sync from '../src/commands/db/sync';
 import { ENTITIES } from '../src/sync';
@@ -145,5 +146,57 @@ describe('db commands', () => {
       1,
     );
     expect(output.entities.find((e) => e.entity === 'tags')?.records).toBe(1);
+  });
+
+  it('shows what the second sync changed', async () => {
+    serve({ Voucher: [voucher], Tag: [tag] });
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await sync.action({ full: false, json: true }, undefined);
+    serve({
+      Voucher: [
+        {
+          ...voucher,
+          description: 'RE-2',
+          update: '2026-01-03T10:00:00+01:00',
+        },
+      ],
+      Tag: [],
+    });
+    await sync.action({ full: true, json: true }, undefined);
+    log.mockClear();
+
+    await history.action({ json: true }, [undefined, undefined]);
+    const changes = JSON.parse(log.mock.calls[0]?.[0] as string) as Array<{
+      entity: string;
+      id: string;
+      kind: string;
+      changes: string;
+    }>;
+    expect(
+      changes.map((c) => [c.entity, c.id, c.kind, c.changes]).sort(),
+    ).toEqual([
+      ['tags', '3', 'deleted', ''],
+      ['vouchers', '1', 'updated', 'description: RE-1 → RE-2'],
+    ]);
+
+    log.mockClear();
+    await history.action({ json: false }, ['vouchers', '1']);
+    const table = log.mock.calls.flat().join('\n');
+    expect(table).toContain('CHANGES');
+    expect(table).toContain('description: RE-1 → RE-2');
+    expect(table).not.toContain('tags');
+  });
+
+  it('reports an empty change log', async () => {
+    serve({ Voucher: [voucher] });
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    await sync.action({ full: false, json: true }, undefined);
+    const infoSpy = vi.spyOn(consola, 'info').mockImplementation(() => {});
+
+    await history.action({ json: false }, [undefined, undefined]);
+
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No changes found.'),
+    );
   });
 });

@@ -39,6 +39,7 @@ import creditNotesLayout from './commands/credit-notes/layout';
 import creditNotesList from './commands/credit-notes/list';
 import creditNotesPdf from './commands/credit-notes/pdf';
 import creditNotesPrint from './commands/credit-notes/print';
+import dbHistory from './commands/db/history';
 import dbInfo from './commands/db/info';
 import dbSync from './commands/db/sync';
 import doctor from './commands/doctor';
@@ -106,6 +107,7 @@ const config = defineConfig({
     login,
     logout,
     doctor,
+    'db:history': dbHistory,
     'db:info': dbInfo,
     'db:sync': dbSync,
     'accounting-contacts:create': accountingContactsCreate,
