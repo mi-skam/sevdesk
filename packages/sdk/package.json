@@ -1,6 +1,6 @@
 {
   "name": "@mi-skam/sevdesk-sdk",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Unofficial Node.js SDK for the sevdesk API.",
   "type": "module",
   "sideEffects": false,
