@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import accountingContactsList from '../src/commands/accounting-contacts/list';
+import contactFieldsList from '../src/commands/contact-fields/list';
 import contactsGet from '../src/commands/contacts/get';
 import contactsList from '../src/commands/contacts/list';
 import invoicesList from '../src/commands/invoices/list';
@@ -313,5 +314,27 @@ describe('--local', () => {
       undefined,
     );
     expect(ids(printed())).toEqual(['3']);
+  });
+
+  it('filters contact fields by contact, newest first', async () => {
+    const field = (id: string, contactId: string) => ({
+      id,
+      objectName: 'ContactCustomField',
+      contact: { id: contactId, objectName: 'Contact' },
+      contactCustomFieldSetting: {
+        id: '2',
+        objectName: 'ContactCustomFieldSetting',
+      },
+      value: 'Gold',
+    });
+    await seed({
+      'contact-fields': [field('1', '7'), field('2', '9'), field('3', '7')],
+    });
+
+    await contactFieldsList.action(
+      { local: true, json: true, contact: 7 },
+      undefined,
+    );
+    expect(ids(printed())).toEqual(['3', '1']);
   });
 });

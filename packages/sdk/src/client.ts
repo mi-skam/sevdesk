@@ -6,6 +6,10 @@ import { BasicsResource } from './resources/basics';
 import { CheckAccountsResource } from './resources/check-accounts';
 import { CommunicationWaysResource } from './resources/communication-ways';
 import { ContactAddressesResource } from './resources/contact-addresses';
+import {
+  ContactCustomFieldSettingsResource,
+  ContactCustomFieldsResource,
+} from './resources/contact-custom-fields';
 import { ContactsResource } from './resources/contacts';
 import { CreditNotesResource } from './resources/credit-notes';
 import { DocumentsResource } from './resources/documents';
@@ -17,6 +21,7 @@ import { PrivateTransactionRulesResource } from './resources/private-transaction
 import { ReceiptGuidanceResource } from './resources/receipt-guidance';
 import { ReportsResource } from './resources/reports';
 import { TagsResource } from './resources/tags';
+import { TextparserResource } from './resources/textparser';
 import { TransactionsResource } from './resources/transactions';
 import { VouchersResource } from './resources/vouchers';
 
@@ -27,6 +32,8 @@ export class SevDesk {
   public readonly checkAccounts: CheckAccountsResource;
   public readonly communicationWays: CommunicationWaysResource;
   public readonly contactAddresses: ContactAddressesResource;
+  public readonly contactCustomFields: ContactCustomFieldsResource;
+  public readonly contactCustomFieldSettings: ContactCustomFieldSettingsResource;
   public readonly contacts: ContactsResource;
   public readonly creditNotes: CreditNotesResource;
   public readonly documents: DocumentsResource;
@@ -38,6 +45,7 @@ export class SevDesk {
   public readonly receiptGuidance: ReceiptGuidanceResource;
   public readonly reports: ReportsResource;
   public readonly tags: TagsResource;
+  public readonly textparser: TextparserResource;
   public readonly transactions: TransactionsResource;
   public readonly vouchers: VouchersResource;
 
@@ -49,6 +57,10 @@ export class SevDesk {
     this.checkAccounts = new CheckAccountsResource(http);
     this.communicationWays = new CommunicationWaysResource(http);
     this.contactAddresses = new ContactAddressesResource(http);
+    this.contactCustomFields = new ContactCustomFieldsResource(http);
+    this.contactCustomFieldSettings = new ContactCustomFieldSettingsResource(
+      http,
+    );
     this.contacts = new ContactsResource(http);
     this.creditNotes = new CreditNotesResource(http);
     this.documents = new DocumentsResource(http);
@@ -60,6 +72,7 @@ export class SevDesk {
     this.receiptGuidance = new ReceiptGuidanceResource(http);
     this.reports = new ReportsResource(http);
     this.tags = new TagsResource(http);
+    this.textparser = new TextparserResource(http);
     this.transactions = new TransactionsResource(http);
     this.vouchers = new VouchersResource(http);
   }

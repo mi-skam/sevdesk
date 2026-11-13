@@ -13,6 +13,7 @@ export * from './resources/basics';
 export * from './resources/check-accounts';
 export * from './resources/communication-ways';
 export * from './resources/contact-addresses';
+export * from './resources/contact-custom-fields';
 export * from './resources/contacts';
 export * from './resources/credit-notes';
 export * from './resources/documents';
@@ -24,6 +25,7 @@ export * from './resources/private-transaction-rules';
 export * from './resources/receipt-guidance';
 export * from './resources/reports';
 export * from './resources/tags';
+export * from './resources/textparser';
 export * from './resources/transactions';
 export * from './resources/vouchers';
 export type {

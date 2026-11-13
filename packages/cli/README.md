@@ -80,7 +80,7 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 
 ## Local database
 
-`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses, communication ways and accounting contacts (debitor/creditor numbers), invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, private transaction rules, booking accounts, tags and parts. It only reads from sevdesk.
+`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses, communication ways, accounting contacts (debitor/creditor numbers) and custom fields, invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, private transaction rules, booking accounts, tags and parts. It only reads from sevdesk.
 
 - **Location**: `SEVDESK_DB`, otherwise `$XDG_DATA_HOME/sevdesk/sevdesk.db`, otherwise `~/.local/share/sevdesk/sevdesk.db`. The file is created with mode `0600` and contains your accounting data, so keep it out of repositories and backups you share.
 - **Incremental**: contacts, invoices, orders and vouchers are the only entities the API can filter by change time. After the first run they are fetched from one hour before the newest change already stored; everything else is fetched in full on every run.
@@ -162,6 +162,17 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`accounts:create-file-import`](#accountscreate-file-import)
 - [`accounts:get`](#accountsget)
 - [`accounts:list`](#accountslist)
+- [`contact-field-settings:create`](#contact-field-settingscreate)
+- [`contact-field-settings:delete`](#contact-field-settingsdelete)
+- [`contact-field-settings:get`](#contact-field-settingsget)
+- [`contact-field-settings:list`](#contact-field-settingslist)
+- [`contact-field-settings:update`](#contact-field-settingsupdate)
+- [`contact-field-settings:usage`](#contact-field-settingsusage)
+- [`contact-fields:create`](#contact-fieldscreate)
+- [`contact-fields:delete`](#contact-fieldsdelete)
+- [`contact-fields:get`](#contact-fieldsget)
+- [`contact-fields:list`](#contact-fieldslist)
+- [`contact-fields:update`](#contact-fieldsupdate)
 - [`contacts:add-address`](#contactsadd-address)
 - [`contacts:add-email`](#contactsadd-email)
 - [`contacts:add-phone`](#contactsadd-phone)
@@ -194,6 +205,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`orders:pdf`](#orderspdf)
 - [`parts:get`](#partsget)
 - [`parts:list`](#partslist)
+- [`placeholders:list`](#placeholderslist)
 - [`private-transaction-rules:create`](#private-transaction-rulescreate)
 - [`private-transaction-rules:delete`](#private-transaction-rulesdelete)
 - [`private-transaction-rules:list`](#private-transaction-ruleslist)
@@ -460,6 +472,171 @@ sevdesk accounts:list [options]
 - `--limit`: The maximum number of check accounts to return. Defaults to all of them.
 - `--offset`: The number of check accounts to skip.
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:create`
+
+Create a custom field definition for contacts.
+
+```bash
+sevdesk contact-field-settings:create [options]
+```
+
+**Options:**
+
+- `--name`: Name of the field. If omitted, you will be prompted.
+- `--description`: Description of the field.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:delete`
+
+Delete a custom field definition. The confirmation names how many field values use it.
+
+```bash
+sevdesk contact-field-settings:delete [id] [options]
+```
+
+**Argument:** `id` — The definition ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:get`
+
+Show a single custom field definition.
+
+```bash
+sevdesk contact-field-settings:get [id] [options]
+```
+
+**Argument:** `id` — The definition ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:list`
+
+List the custom field definitions for contacts.
+
+```bash
+sevdesk contact-field-settings:list [options]
+```
+
+**Options:**
+
+- `--limit`: Maximum number of definitions to return. Defaults to all of them.
+- `--offset`: Number of definitions to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:update`
+
+Rename or describe a custom field definition.
+
+```bash
+sevdesk contact-field-settings:update [id] [options]
+```
+
+**Argument:** `id` — The definition ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--name`: New name.
+- `--description`: New description.
+- `--json`: Output in JSON format.
+
+### `contact-field-settings:usage`
+
+Count the contacts that have a value for a custom field definition.
+
+```bash
+sevdesk contact-field-settings:usage [id] [options]
+```
+
+**Argument:** `id` — The definition ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--json`: Output in JSON format.
+
+### `contact-fields:create`
+
+Set a custom field of a contact.
+
+```bash
+sevdesk contact-fields:create [options]
+```
+
+**Options:**
+
+- `--contact`: ID of the contact. If omitted, you will be prompted.
+- `--setting`: ID of the field definition, see `contact-field-settings:list`. If omitted, you will be prompted.
+- `--value`: Value of the field. If omitted, you will be prompted.
+- `--json`: Output in JSON format.
+
+### `contact-fields:delete`
+
+Delete the value of a custom field.
+
+```bash
+sevdesk contact-fields:delete [id] [options]
+```
+
+**Argument:** `id` — The contact field ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-fields:get`
+
+Show a single custom field value.
+
+```bash
+sevdesk contact-fields:get [id] [options]
+```
+
+**Argument:** `id` — The contact field ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-fields:list`
+
+List the custom field values of contacts.
+
+```bash
+sevdesk contact-fields:list [options]
+```
+
+**Options:**
+
+- `--contact`: Only the fields of this contact ID. The API rejects an ID that is not a contact; `--local` returns an empty list instead.
+- `--limit`: Maximum number of field values to return. Defaults to all of them.
+- `--offset`: Number of field values to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `contact-fields:update`
+
+Change the value of a custom field.
+
+```bash
+sevdesk contact-fields:update [id] [options]
+```
+
+**Argument:** `id` — The contact field ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--value`: New value. If omitted, you will be prompted.
 - `--json`: Output in JSON format.
 
 ### `contacts:add-address`
@@ -1145,6 +1322,20 @@ sevdesk parts:list [options]
 - `--limit`: Maximum number of parts to return. Defaults to all of them.
 - `--offset`: Number of parts to skip.
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `placeholders:list`
+
+List the placeholders (such as `[%KUNDENNUMMER%]`) usable in the texts of a document type, grouped by what they refer to.
+
+```bash
+sevdesk placeholders:list [options]
+```
+
+**Options:**
+
+- `--object-type`: Document type: `Invoice`, `CreditNote`, `Order`, `Contact`, `Letter` or `Email`.
+- `--sub-object-type`: For `Email`: the document type the e-mail is sent with.
 - `--json`: Output in JSON format.
 
 ### `private-transaction-rules:create`

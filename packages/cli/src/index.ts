@@ -13,6 +13,17 @@ import accountsCreateClearing from './commands/accounts/create-clearing';
 import accountsCreateFileImport from './commands/accounts/create-file-import';
 import accountsGet from './commands/accounts/get';
 import accountsList from './commands/accounts/list';
+import contactFieldSettingsCreate from './commands/contact-field-settings/create';
+import contactFieldSettingsDelete from './commands/contact-field-settings/delete';
+import contactFieldSettingsGet from './commands/contact-field-settings/get';
+import contactFieldSettingsList from './commands/contact-field-settings/list';
+import contactFieldSettingsUpdate from './commands/contact-field-settings/update';
+import contactFieldSettingsUsage from './commands/contact-field-settings/usage';
+import contactFieldsCreate from './commands/contact-fields/create';
+import contactFieldsDelete from './commands/contact-fields/delete';
+import contactFieldsGet from './commands/contact-fields/get';
+import contactFieldsList from './commands/contact-fields/list';
+import contactFieldsUpdate from './commands/contact-fields/update';
 import contactsAddAddress from './commands/contacts/add-address';
 import contactsAddEmail from './commands/contacts/add-email';
 import contactsAddPhone from './commands/contacts/add-phone';
@@ -50,6 +61,7 @@ import ordersList from './commands/orders/list';
 import ordersPdf from './commands/orders/pdf';
 import partsGet from './commands/parts/get';
 import partsList from './commands/parts/list';
+import placeholdersList from './commands/placeholders/list';
 import privateTransactionRulesCreate from './commands/private-transaction-rules/create';
 import privateTransactionRulesDelete from './commands/private-transaction-rules/delete';
 import privateTransactionRulesList from './commands/private-transaction-rules/list';
@@ -102,6 +114,17 @@ const config = defineConfig({
     'accounts:create-file-import': accountsCreateFileImport,
     'accounts:get': accountsGet,
     'accounts:list': accountsList,
+    'contact-field-settings:create': contactFieldSettingsCreate,
+    'contact-field-settings:delete': contactFieldSettingsDelete,
+    'contact-field-settings:get': contactFieldSettingsGet,
+    'contact-field-settings:list': contactFieldSettingsList,
+    'contact-field-settings:update': contactFieldSettingsUpdate,
+    'contact-field-settings:usage': contactFieldSettingsUsage,
+    'contact-fields:create': contactFieldsCreate,
+    'contact-fields:delete': contactFieldsDelete,
+    'contact-fields:get': contactFieldsGet,
+    'contact-fields:list': contactFieldsList,
+    'contact-fields:update': contactFieldsUpdate,
     'contacts:add-address': contactsAddAddress,
     'contacts:add-email': contactsAddEmail,
     'contacts:add-phone': contactsAddPhone,
@@ -134,6 +157,7 @@ const config = defineConfig({
     'orders:pdf': ordersPdf,
     'parts:get': partsGet,
     'parts:list': partsList,
+    'placeholders:list': placeholdersList,
     'private-transaction-rules:create': privateTransactionRulesCreate,
     'private-transaction-rules:delete': privateTransactionRulesDelete,
     'private-transaction-rules:list': privateTransactionRulesList,
