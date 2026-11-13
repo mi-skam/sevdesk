@@ -11,6 +11,7 @@ Unofficial command-line interface for the [sevdesk](https://sevdesk.de/) API.[^1
 - 📄 **Documents**: List invoices, credit notes and orders, and download them as PDF.
 - 🗄️ **Local database**: Copy the whole account into a local SQLite database with `db:sync`, incrementally where the API allows it, and keep records even after they are deleted in sevdesk.
 - 📤 **Exports**: Export accounting data in the DATEV format, or contacts, invoices, transactions and vouchers as CSV.
+- 🧩 **MCP server**: `sevdesk mcp` offers the read commands as tools to Claude Code and other MCP clients, optionally with draft-only writes.
 - 🤖 **Automation-friendly**: `--json` output on every command, non-interactive mode, and stable exit codes.
 
 ## Requirements
@@ -106,6 +107,21 @@ sevdesk db:history invoices 1234   # every logged change of one invoice
 sevdesk vouchers:list --local --status 100   # answered from the database
 ```
 
+## MCP server
+
+`sevdesk mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server on stdin/stdout, so Claude Code or another MCP client can query the account. Each tool is a CLI command (`vouchers_list` = `vouchers:list`) with the same options and the same JSON output, including `local` to answer from the [local database](#local-database). It uses the token and database of the CLI.
+
+```bash
+claude mcp add sevdesk -- sevdesk mcp                  # read-only
+claude mcp add sevdesk -- sevdesk mcp --allow-writes   # plus draft-only writes
+```
+
+- **Read-only by default**: every `list` and `get` command, `accounts:balance`, `guidance:accounts`, `invoices:overdue`, `numbering:get`, `doctor`, the layout and placeholder lists, and `db:info`, `db:history` and `db:sync` (which writes only the local database).
+- **`--allow-writes`** adds tools that create without changing anything booked: `vouchers:create` (always as a draft, status 50), `invoices:create` (a draft, never sent), `contacts:create` and `contacts:add-address`/`add-email`/`add-phone`, and `tags:create`. Your MCP client asks before each call.
+- **Never offered**: booking, enshrining, resetting, sending, deleting, updating existing records, layouts, PDFs, exports and anything else that writes files, `login`/`logout`.
+- Results are compact JSON without the Base64 thumbnails and PDFs of templates and letterpapers, HTML fields (such as the head and foot texts of invoices) come back as plain text, `null` fields and `sevClient` are left out, and a contact embedded in another record keeps only its id, name and customer number. A list longer than about 20,000 tokens is cut to the records that fit, with a note on how to page or filter for the rest.
+- Confirmation prompts of the CLI are answered by the client's tool approval, so writes run with `--yes`. A missing argument is an error, never a prompt.
+
 ## Scripting
 
 The CLI is designed to be scriptable:
@@ -151,6 +167,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`login`](#login)
 - [`logout`](#logout)
 - [`doctor`](#doctor)
+- [`mcp`](#mcp)
 - [`credit-notes:print`](#credit-notesprint)
 - [`db:history`](#dbhistory)
 - [`db:info`](#dbinfo)
@@ -255,6 +272,18 @@ sevdesk login [options]
 
 - `--token`: The sevdesk API token. If omitted, you will be prompted.
 
+### `mcp`
+
+Run a Model Context Protocol server on stdin/stdout that offers the read commands as tools. See [MCP server](#mcp-server).
+
+```bash
+sevdesk mcp [options]
+```
+
+**Options:**
+
+- `--allow-writes`: Also offer tools that create drafts: draft vouchers and invoices, contacts with their addresses, e-mails and phone numbers, and tags. Never booking, sending or deleting. Defaults to `false`.
+
 ### `logout`
 
 Log out by removing the stored API token.
@@ -294,7 +323,7 @@ sevdesk credit-notes:print [id] [options]
 
 ### `db:history`
 
-Show the change log of the local database, newest first: what each `db:sync` found new, changed (with the fields that changed, e.g. `status: 200 → 1000`), deleted or restored. The first sync of an entity logs nothing, since it has nothing to compare against. Makes no request.
+Show the change log of the local database, newest first, with a short label per record (number or name, amount, other party): what each `db:sync` found new, changed (with the fields that changed, e.g. `status: 200 → 1000`), deleted or restored. The first sync of an entity logs nothing, since it has nothing to compare against. Makes no request.
 
 ```bash
 sevdesk db:history [entity] [id] [options]

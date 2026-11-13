@@ -47,3 +47,67 @@ export function describeChanges(previous: unknown, current: unknown): string {
     .map(([path, before, after]) => `${path}: ${show(before)} → ${show(after)}`)
     .join('; ');
 }
+
+/** Fields that identify a record, most specific first. */
+const IDENTIFIERS = [
+  'invoiceNumber',
+  'orderNumber',
+  'creditNoteNumber',
+  'partNumber',
+  'number',
+  'description',
+  'name',
+  'value',
+  'street',
+];
+
+/** Fields naming the other party. */
+const PARTIES = [
+  'contact',
+  'supplier',
+  'supplierName',
+  'payeePayerName',
+  'contactName',
+];
+
+const MAX_LABEL_LENGTH = 80;
+
+function text(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value).trim();
+  }
+  if (typeof value === 'object' && value !== null) {
+    const ref = value as Record<string, unknown>;
+    const person = [ref['surename'], ref['familyname']]
+      .filter(Boolean)
+      .join(' ');
+    return text(ref['name']) || person;
+  }
+  return '';
+}
+
+/**
+ * A short human label for a stored record, such as `RE-1065 · 1428 · ACME
+ * GmbH` for an invoice or `-18.07 · ACME GmbH · RE-1` for a transaction:
+ * its number or name, amount, other party and payment purpose, whichever it
+ * has. Empty when it has none of them.
+ */
+export function recordLabel(record: unknown): string {
+  if (typeof record !== 'object' || record === null) {
+    return '';
+  }
+  const fields = record as Record<string, unknown>;
+  const first = (keys: readonly string[]) =>
+    keys.map((key) => text(fields[key])).find((value) => value !== '') ?? '';
+  const isContact = fields['objectName'] === 'Contact';
+  const parts = [
+    isContact ? text(fields) : first(IDENTIFIERS),
+    first(['sumGross', 'amount', 'price']),
+    isContact ? '' : first(PARTIES),
+    text(fields['paymtPurpose']),
+  ];
+  const label = [...new Set(parts.filter((part) => part !== ''))].join(' · ');
+  return label.length > MAX_LABEL_LENGTH
+    ? `${label.slice(0, MAX_LABEL_LENGTH - 1)}…`
+    : label;
+}
