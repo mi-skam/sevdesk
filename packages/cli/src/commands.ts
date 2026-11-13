@@ -51,6 +51,7 @@ import invoicesDelete from './commands/invoices/delete';
 import invoicesGet from './commands/invoices/get';
 import invoicesLayout from './commands/invoices/layout';
 import invoicesList from './commands/invoices/list';
+import invoicesOverdue from './commands/invoices/overdue';
 import invoicesPdf from './commands/invoices/pdf';
 import invoicesSend from './commands/invoices/send';
 import invoicesUpdate from './commands/invoices/update';
@@ -151,6 +152,7 @@ export const commands = {
   'invoices:get': invoicesGet,
   'invoices:layout': invoicesLayout,
   'invoices:list': invoicesList,
+  'invoices:overdue': invoicesOverdue,
   'invoices:pdf': invoicesPdf,
   'layouts:letterpapers': layoutsLetterpapers,
   'layouts:templates': layoutsTemplates,
