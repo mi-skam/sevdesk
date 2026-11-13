@@ -8,6 +8,7 @@ import { defineCommand, defineOptions } from 'zodline';
 import { commands } from '../src/commands';
 import {
   buildTools,
+  htmlToText,
   pagingHint,
   shapeOutput,
   toolKind,
@@ -331,5 +332,60 @@ describe('toolWording', () => {
     expect(toolWording('No changes. Run `sevdesk db:info` first.')).toBe(
       'No changes. Call the db_info tool first.',
     );
+  });
+});
+
+describe('htmlToText', () => {
+  it('turns document HTML into plain text', () => {
+    expect(
+      htmlToText(
+        '<p>\n    Sehr geehrte Damen und Herren,\n</p>\n<p>\n    vielen Dank!<br />\n    Leistungen:</p><br/><strong> Zeitraum 01.01.2026 bis 31.01.2026 </strong>',
+      ),
+    ).toBe(
+      'Sehr geehrte Damen und Herren,\n\nvielen Dank!\nLeistungen:\n\nZeitraum 01.01.2026 bis 31.01.2026',
+    );
+  });
+
+  it('drops attributes, keeps placeholders and decodes entities', () => {
+    expect(
+      htmlToText(
+        '<p>[%PAYPAL%]</p><p><span style="white-space: pre-wrap;">10h&nbsp;IT-Support &amp; Beratung &lt;ACME&gt; &#8364;5 &#x2013; ok</span></p>',
+      ),
+    ).toBe('[%PAYPAL%]\n\n10h IT-Support & Beratung <ACME> €5 – ok');
+  });
+
+  it('turns list items into dashes', () => {
+    expect(htmlToText('<ul><li>RE-1</li><li>RE-2</li></ul>')).toBe(
+      '- RE-1\n- RE-2',
+    );
+  });
+
+  it('leaves text without tags alone', () => {
+    for (const text of [
+      'ACME GmbH',
+      'a < b and c > d',
+      'Brüderstraße 11\n06712 Zeitz',
+      '',
+    ]) {
+      expect(htmlToText(text)).toBe(text);
+    }
+  });
+
+  it('is applied to every string of a tool result', () => {
+    expect(
+      shapeOutput(
+        JSON.stringify([
+          {
+            id: '1',
+            headText: '<p>Hallo<br>Welt</p>',
+            contact: { name: '<b>ACME</b>' },
+          },
+        ]),
+      ),
+    ).toEqual({
+      text: JSON.stringify([
+        { id: '1', headText: 'Hallo\nWelt', contact: { name: 'ACME' } },
+      ]),
+    });
   });
 });

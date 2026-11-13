@@ -83,6 +83,72 @@ const OMITTED_FIELDS: Record<string, string[]> = {
  */
 export const MAX_RESULT_LENGTH = 40_000;
 
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  nbsp: ' ',
+  quot: '"',
+};
+
+/** Looks like markup: an opening, closing or self-closing tag. */
+const HTML_TAG = /<\/?[a-z][a-z0-9]*(\s[^<>]*)?\/?>/i;
+
+/**
+ * Turns an HTML fragment, such as an invoice's `headText`, into plain text:
+ * block ends and `<br>` become line breaks, list items get a dash, other
+ * tags and their attributes go, entities are decoded and whitespace is
+ * collapsed as a browser would. Text without tags is returned unchanged.
+ */
+export function htmlToText(value: string): string {
+  if (!HTML_TAG.test(value)) {
+    return value;
+  }
+  return (
+    value
+      // Line breaks in the markup are whitespace; only tags break lines.
+      .replace(/\s+/g, ' ')
+      .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<li\b[^>]*>/gi, '\n- ')
+      .replace(/<\/(p|h[1-6]|blockquote|table)>/gi, '\n\n')
+      .replace(/<\/(div|ul|ol|tr)>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, code: string) => {
+        if (code[0] === '#') {
+          const point =
+            code[1] === 'x' || code[1] === 'X'
+              ? parseInt(code.slice(2), 16)
+              : parseInt(code.slice(1), 10);
+          return Number.isFinite(point) ? String.fromCodePoint(point) : entity;
+        }
+        return ENTITIES[code.toLowerCase()] ?? entity;
+      })
+      .split('\n')
+      .map((line) => line.replace(/[ \t\u00a0]+/g, ' ').trim())
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
+}
+
+/** Applies {@link htmlToText} to every string in a JSON value. */
+function plainText(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return htmlToText(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(plainText);
+  }
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, plainText(entry)]),
+    );
+  }
+  return value;
+}
+
 /**
  * Compacts JSON output (the CLI indents it), drops `omit` fields from each
  * record and cuts an array that is too long. Non-JSON output is cut as text.
@@ -114,7 +180,9 @@ export function shapeOutput(
     }
     return copy;
   };
-  const shaped = Array.isArray(value) ? value.map(strip) : strip(value);
+  const shaped = plainText(
+    Array.isArray(value) ? value.map(strip) : strip(value),
+  );
   const compact = JSON.stringify(shaped);
   if (compact.length <= maxLength || !Array.isArray(shaped)) {
     return compact.length <= maxLength
