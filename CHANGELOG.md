@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.3](https://github.com/mi-skam/sevdesk/compare/v0.4.2...v0.4.3) (2026-11-13)
+
+
+### Features
+
+* show contact names in accounting contacts ([#32](https://github.com/mi-skam/sevdesk/issues/32)) ([e2da3c1](https://github.com/mi-skam/sevdesk/commit/e2da3c1e742abf66a4d1374212e4fdfc2aa7e3ea))
+
+
+### Bug Fixes
+
+* align table columns after wide characters ([#30](https://github.com/mi-skam/sevdesk/issues/30)) ([edb132f](https://github.com/mi-skam/sevdesk/commit/edb132ff5dc57fa3224f05c4a09347e2484dc546))
+
 ## [0.4.2](https://github.com/mi-skam/sevdesk/compare/v0.4.1...v0.4.2) (2026-11-13)
 
 
