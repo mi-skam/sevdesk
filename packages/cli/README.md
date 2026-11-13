@@ -86,6 +86,7 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 - **Incremental**: contacts, invoices, orders and vouchers are the only entities the API can filter by change time. After the first run they are fetched from one hour before the newest change already stored; everything else is fetched in full on every run.
 - **Deletions**: a full fetch marks records it no longer sees as deleted instead of removing them. Incremental fetches cannot see deletions, so those four entities are fetched in full again once a week, or whenever you pass `--full`.
 - **Atomic**: everything is fetched first and written in one transaction. A failed request leaves the database unchanged.
+- **Change log**: from the second sync of an entity on, every record a sync finds new, changed, deleted or restored is logged with its data before and after. `db:history` shows the log. A record that changes twice between two syncs is logged once, with its latest state.
 - Requires Node.js 22.13 or later (built-in `node:sqlite`).
 
 Every `list` and `get` command for synced data accepts `--local` to answer from the database instead of the API: no requests, no token needed, and the same `--json` output as the live command. Filters, sort order, `--offset` and `--limit` reproduce the API's behavior, including its quirks. Commands the server computes (`accounts:balance`, `guidance:accounts`, `numbering:get`, `export:*`, `*:pdf`) stay live-only. Local results are only as fresh as the last `db:sync`.
@@ -100,6 +101,8 @@ Known differences from live output:
 sevdesk db:sync          # first run: everything; later runs: only what changed
 sevdesk db:sync --full   # fetch everything and detect deletions
 sevdesk db:info          # path, size and record counts per entity
+sevdesk db:history       # what the last syncs found new, changed or deleted
+sevdesk db:history invoices 1234   # every logged change of one invoice
 sevdesk vouchers:list --local --status 100   # answered from the database
 ```
 
@@ -149,6 +152,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`logout`](#logout)
 - [`doctor`](#doctor)
 - [`credit-notes:print`](#credit-notesprint)
+- [`db:history`](#dbhistory)
 - [`db:info`](#dbinfo)
 - [`db:sync`](#dbsync)
 - [`accounting-contacts:create`](#accounting-contactscreate)
@@ -287,9 +291,28 @@ sevdesk credit-notes:print [id] [options]
 - `--yes`: Skip the confirmation prompt. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `db:history`
+
+Show the change log of the local database, newest first: what each `db:sync` found new, changed (with the fields that changed, e.g. `status: 200 → 1000`), deleted or restored. The first sync of an entity logs nothing, since it has nothing to compare against. Makes no request.
+
+```bash
+sevdesk db:history [entity] [id] [options]
+```
+
+**Arguments:**
+
+- `entity` — Only changes of this entity, as `db:sync` names it (e.g. `vouchers`, `invoices`, `transactions`).
+- `id` — Only changes of this record; needs the entity.
+
+**Options:**
+
+- `--since`: Only changes recorded at or after this moment. Unix seconds, a date (`YYYY-MM-DD`, midnight UTC) or an ISO 8601 timestamp.
+- `--limit`: Maximum number of changes to show. Defaults to 20, or all of them for one record.
+- `--json`: Output in JSON format, including each record before and after the change.
+
 ### `db:info`
 
-Show where the local database is, how many records it holds per entity and when each was last synced. Fails with a hint to run `db:sync` when there is no database yet.
+Show where the local database is, how many records it holds per entity, when each was last synced and how many entries the change log has. Fails with a hint to run `db:sync` when there is no database yet.
 
 ```bash
 sevdesk db:info [options]

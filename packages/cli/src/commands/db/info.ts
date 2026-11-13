@@ -20,6 +20,9 @@ export default defineCommand({
     }
     consola.info(`Database: ${info.path} (${formatBytes(info.bytes)})`);
     consola.info(`Last sync: ${info.lastSync ?? 'never'}`);
+    consola.info(
+      `Change log: ${info.changes} ${info.changes === 1 ? 'entry' : 'entries'} (see \`sevdesk db:history\`)`,
+    );
     if (info.entities.length === 0) {
       consola.info('No records synced yet.');
       return;

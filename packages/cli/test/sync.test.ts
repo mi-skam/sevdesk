@@ -225,6 +225,38 @@ describe('syncStore', () => {
   });
 });
 
+describe('change log', () => {
+  it('logs nothing on the first sync and every change after it', async () => {
+    let rows = [
+      record('1', '2026-01-05T10:00:00Z'),
+      record('2', '2026-01-05T10:00:00Z'),
+    ];
+    const vouchers = entity('vouchers', () => rows, false);
+    await syncStore(client, store, { now: t0, entities: [vouchers] });
+    expect(store.changes()).toEqual([]);
+
+    rows = [
+      record('1', '2026-01-06T10:00:00Z'),
+      record('3', '2026-01-06T10:00:00Z'),
+    ];
+    await syncStore(client, store, {
+      now: new Date('2026-01-11T00:00:00Z'),
+      entities: [vouchers],
+    });
+
+    expect(
+      store
+        .changes()
+        .map((c) => [c.id, c.kind])
+        .sort(),
+    ).toEqual([
+      ['1', 'updated'],
+      ['2', 'deleted'],
+      ['3', 'new'],
+    ]);
+  });
+});
+
 describe('ENTITIES', () => {
   it('has unique names and syncs exactly the four entities with an updateAfter filter incrementally', () => {
     const names = ENTITIES.map((e) => e.name);
