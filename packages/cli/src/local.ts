@@ -165,6 +165,20 @@ export function equals(
 }
 
 /**
+ * {@link equals}, ignoring case: `GET /Invoice?invoiceNumber=re-1065` and
+ * `GET /Order?orderNumber=…` match the stored number whatever its case, but
+ * only as a whole (verified live).
+ */
+export function equalsIgnoringCase(
+  value: string | null | undefined,
+  wanted: string | undefined,
+): boolean {
+  return (
+    wanted === undefined || (value ?? '').toLowerCase() === wanted.toLowerCase()
+  );
+}
+
+/**
  * A document-date bound as the list commands take it: `dd.mm.yyyy` or a plain
  * `YYYY-MM-DD` compares calendar days in the record's own time zone; Unix
  * seconds or an ISO timestamp compare instants.

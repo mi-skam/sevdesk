@@ -166,6 +166,23 @@ describe('--local', () => {
     expect(ids(printed())).toEqual(['4']);
   });
 
+  it('matches invoice numbers whole, ignoring case, like the API', async () => {
+    await seed({ invoices: [invoice('1', 'RE'), invoice('12', 'RE')] });
+
+    for (const [wanted, expected] of [
+      ['RE-1', ['1']],
+      ['re-1', ['1']],
+      ['RE-', []],
+      ['1', []],
+    ] as const) {
+      await invoicesList.action(
+        { local: true, json: true, invoiceNumber: wanted },
+        undefined,
+      );
+      expect(ids(printed())).toEqual(expected);
+    }
+  });
+
   it('lists organizations only unless depth is 1', async () => {
     await seed({ contacts: [acme, jane] });
 
