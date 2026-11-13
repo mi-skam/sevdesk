@@ -5,6 +5,8 @@ import { BaseResource } from './base';
 export interface ListAccountingContactsOptions extends ListOptions {
   /** Only the accounting contact of this contact. */
   contactId?: number;
+  /** Related objects to inline, e.g. `['contact']` for the contact's name. */
+  embed?: string[];
 }
 
 export interface CreateAccountingContactOptions {
@@ -27,9 +29,14 @@ export interface AccountingContact {
   /**
    * Missing (not `null`) when the accounting contact belongs to a bare name
    * rather than a contact, such as a voucher supplier entered without one;
-   * `contactName` carries the name then. Verified live.
+   * `contactName` carries the name then. Verified live. With
+   * `embed: ['contact']` it is the full contact, including its name.
    */
-  contact?: ModelRefResponse;
+  contact?: ModelRefResponse & {
+    name?: string | null;
+    surename?: string | null;
+    familyname?: string | null;
+  };
   /** Set only when `contact` is missing. Not in the spec. */
   contactName: string | null;
   /** Not in the spec; always `null` so far. */
@@ -47,13 +54,14 @@ export class AccountingContactsResource extends BaseResource {
   public list(
     options: ListAccountingContactsOptions = {},
   ): Promise<AccountingContact[]> {
-    const { contactId, limit, offset } = options;
+    const { contactId, embed, limit, offset } = options;
     return this.http.request<AccountingContact[]>({
       method: 'GET',
       path: '/AccountingContact',
       query: {
         'contact[id]': contactId,
         'contact[objectName]': contactId === undefined ? undefined : 'Contact',
+        embed,
         limit,
         offset,
       },
@@ -63,10 +71,13 @@ export class AccountingContactsResource extends BaseResource {
   /** Retrieves a single accounting contact via `GET /AccountingContact/{accountingContactId}`. */
   public async get(options: {
     accountingContactId: number;
+    /** Related objects to inline, e.g. `['contact']` for the contact's name. */
+    embed?: string[];
   }): Promise<AccountingContact> {
     const accountingContacts = await this.http.request<AccountingContact[]>({
       method: 'GET',
       path: `/AccountingContact/${options.accountingContactId}`,
+      query: { embed: options.embed },
     });
     const accountingContact = accountingContacts[0];
     if (!accountingContact) {

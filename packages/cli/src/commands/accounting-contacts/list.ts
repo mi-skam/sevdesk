@@ -10,7 +10,7 @@ import {
   readLocal,
   refersTo,
 } from '../../local';
-import { printJson, printTable } from '../../output';
+import { contactLabel, printJson, printTable } from '../../output';
 import { fetchAll } from '../../pagination';
 
 export default defineCommand({
@@ -54,6 +54,7 @@ export default defineCommand({
         (page) =>
           client.accountingContacts.list({
             contactId: options.contact,
+            embed: ['contact'],
             ...page,
           }),
         { limit: options.limit, offset: options.offset },
@@ -70,7 +71,9 @@ export default defineCommand({
     printTable(
       accountingContacts.map((record) => ({
         id: record.id,
-        contact: record.contact?.id ?? record.contactName ?? '-',
+        contact: record.contact
+          ? contactLabel(record.contact)
+          : (record.contactName ?? '-'),
         debitor: record.debitorNumber ?? '-',
         creditor: record.creditorNumber ?? '-',
       })),

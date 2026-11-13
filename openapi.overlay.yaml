@@ -265,8 +265,12 @@ actions:
         [
           { $ref: '#/components/parameters/limit' },
           { $ref: '#/components/parameters/offset' },
+          { $ref: '#/components/parameters/embed' },
         ]
       x-sevdesk-default-order: contact id ascending; records without a contact first, by id ascending.
+  - target: $.paths['/AccountingContact/{accountingContactId}'].get
+    update:
+      parameters: [{ $ref: '#/components/parameters/embed' }]
   - target: $.components.schemas.Model_AccountingContactResponse.properties
     description: Fields the API returns that the spec omits.
     update:

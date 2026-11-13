@@ -70,7 +70,44 @@ describe('accounting contact commands', () => {
     expect(url.pathname).toBe('/api/v1/AccountingContact');
     expect(url.searchParams.get('contact[id]')).toBe('7');
     expect(url.searchParams.get('contact[objectName]')).toBe('Contact');
+    expect(url.searchParams.get('embed')).toBe('contact');
     expect(log.mock.calls.flat().join('\n')).toContain('10001');
+  });
+
+  it('shows contact names, falling back to the bare name', async () => {
+    respondWith([
+      {
+        ...accountingContact,
+        contact: { id: '7', objectName: 'Contact', name: 'ACME GmbH' },
+      },
+      {
+        ...accountingContact,
+        id: '4',
+        contact: {
+          id: '8',
+          objectName: 'Contact',
+          name: null,
+          surename: 'Erika',
+          familyname: 'Mustermann',
+        },
+      },
+      {
+        ...accountingContact,
+        id: '5',
+        contact: undefined,
+        contactName: 'ACME Coffee',
+        debitorNumber: null,
+        creditorNumber: '70000',
+      },
+    ]);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await list.action({ json: false, local: false }, undefined);
+
+    const output = log.mock.calls.flat().join('\n');
+    expect(output).toContain('ACME GmbH');
+    expect(output).toContain('Erika Mustermann');
+    expect(output).toContain('ACME Coffee');
   });
 
   it('reports an empty list', async () => {
@@ -89,6 +126,7 @@ describe('accounting contact commands', () => {
     await get.action({ json: true, local: false }, [3]);
 
     expect(request().url.pathname).toBe('/api/v1/AccountingContact/3');
+    expect(request().url.searchParams.get('embed')).toBe('contact');
     expect(JSON.parse(log.mock.calls[0]?.[0] as string)).toEqual(
       accountingContact,
     );
