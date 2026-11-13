@@ -154,7 +154,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * fields and the account reference `sevClient` (the same everywhere) go, and
  * a contact embedded in another record, such as an invoice's customer,
  * shrinks to its id, name and customer number. A contact that is the result
- * itself stays whole.
+ * itself, or sits in a wrapper without an `id` such as `contacts_get`'s
+ * `{ contact, addresses }`, stays whole.
  */
 export function slim(value: unknown, insideRecord = false): unknown {
   if (typeof value === 'string') {
@@ -167,7 +168,9 @@ export function slim(value: unknown, insideRecord = false): unknown {
     return value;
   }
   const embeddedContact = insideRecord && value['objectName'] === 'Contact';
-  const isOwnRecord = typeof value['objectName'] === 'string';
+  // An API record, or a row a command computed from one (invoices:overdue).
+  const isOwnRecord =
+    typeof value['objectName'] === 'string' || typeof value['id'] === 'string';
   const entries = Object.entries(value).filter(
     ([key, entry]) =>
       entry !== null &&
