@@ -404,6 +404,9 @@ actions:
         seconds (inclusive). A `dd.mm.yyyy` string is accepted but ignored: the
         filter then matches every invoice.
       example: 1767225600
+  - target: $.paths['/Invoice'].get.parameters[?(@.name == 'invoiceNumber')]
+    update:
+      description: Matches the whole invoice number, ignoring case (`re-1065` finds `RE-1065`, verified live); a part of it such as `1065` matches nothing.
   - target: $.paths['/Invoice'].get.parameters[?(@.name == 'endDate')]
     update:
       description: >-
@@ -457,6 +460,9 @@ actions:
     update:
       description: Only orders whose `orderDate` is at or before this Unix timestamp in seconds (inclusive).
       example: 1767225600
+  - target: $.paths['/Order'].get.parameters[?(@.name == 'orderNumber')]
+    update:
+      description: Matches the whole order number, ignoring case (verified live); a part of it matches nothing.
 
   # --------------------------------------------------------- /CreditNote
 

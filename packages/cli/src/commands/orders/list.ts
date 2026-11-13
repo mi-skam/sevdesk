@@ -7,6 +7,7 @@ import { requireClient } from '../../client';
 import {
   byIdDesc,
   equals,
+  equalsIgnoringCase,
   inDateRange,
   localList,
   localOption,
@@ -65,7 +66,7 @@ export default defineCommand({
       orders = localList(await readLocal<Order>('orders'), {
         where: (order) =>
           equals(order.status, options.status) &&
-          equals(order.orderNumber, options.orderNumber) &&
+          equalsIgnoringCase(order.orderNumber, options.orderNumber) &&
           inDateRange(order.orderDate, options.startDate, options.endDate) &&
           refersToContact(order.contact, options.contact) &&
           matchesChangeFilters(order, options),

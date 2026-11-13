@@ -7,6 +7,7 @@ import { requireClient } from '../../client';
 import {
   byIdDesc,
   equals,
+  equalsIgnoringCase,
   inDateRange,
   localList,
   localOption,
@@ -90,7 +91,7 @@ export default defineCommand({
           invoice.invoiceType !== 'MA' &&
           invoice.invoiceType !== 'WKR' &&
           equals(invoice.status, status) &&
-          equals(invoice.invoiceNumber, options.invoiceNumber) &&
+          equalsIgnoringCase(invoice.invoiceNumber, options.invoiceNumber) &&
           inDateRange(
             invoice.invoiceDate,
             options.startDate,
