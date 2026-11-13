@@ -100,6 +100,29 @@ describe('MCP tools from the CLI commands', () => {
     expect(createProperties).not.toContain('json');
   });
 
+  it('does not advertise a date default frozen at startup', () => {
+    const balance = tool(commands, 'accounts_balance');
+    const date = (
+      balance.inputSchema['properties'] as Record<
+        string,
+        Record<string, unknown>
+      >
+    )['date']!;
+    expect(date['default']).toBeUndefined();
+    expect(date['description']).toMatch(/Defaults to today\.$/);
+  });
+
+  it('leaves the record copies out of db_history', () => {
+    expect(
+      shapeOutput(
+        JSON.stringify([{ seq: 1, previous: {}, data: {}, changes: 'a' }]),
+        ['previous', 'data'],
+      ),
+    ).toEqual({
+      text: '[{"seq":1,"changes":"a"}]',
+    });
+  });
+
   it('returns the JSON output of the command', async () => {
     fetchMock.mockImplementation(async (input: string) =>
       jsonResponse(

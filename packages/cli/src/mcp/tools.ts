@@ -68,16 +68,20 @@ const ARGUMENT_NAMES: Record<string, string[]> = {
  * HTML, which make `layouts:templates` over 20 MB and mean nothing to a model.
  */
 const OMITTED_FIELDS: Record<string, string[]> = {
+  // Two full copies of the record per entry; `changes` summarizes them and
+  // the get tool returns the current record.
+  'db:history': ['previous', 'data'],
   'layouts:letterpapers': ['img', 'pdf'],
   'layouts:templates': ['img', 'html'],
 };
 
 /**
- * The largest result text a tool returns, about 20,000 tokens: Claude Code
- * rejects results over 25,000 tokens by default. A longer list is cut to the
+ * The largest result text a tool returns. Claude Code rejects results over
+ * 25,000 tokens by default and counts the JSON-escaped text; a cut list of
+ * 80,000 characters still came to 89,000 there, so stay well below. A longer list is cut to the
  * records that fit, with a note on how to page.
  */
-export const MAX_RESULT_LENGTH = 80_000;
+export const MAX_RESULT_LENGTH = 40_000;
 
 /**
  * Compacts JSON output (the CLI indents it), drops `omit` fields from each
@@ -303,6 +307,25 @@ export async function runCommand(
   return failed ? { content, isError: true } : { content };
 }
 
+/**
+ * A default computed when the server starts, such as today's date, would be
+ * advertised long after it went stale; the command computes it per call.
+ */
+function datelessDefaults(schema: Record<string, unknown>): void {
+  const properties = (schema['properties'] ?? {}) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  for (const property of Object.values(properties)) {
+    const value = property['default'];
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      delete property['default'];
+      property['description'] =
+        `${String(property['description'] ?? '').trim()} Defaults to today.`.trim();
+    }
+  }
+}
+
 /** How to reach the records a cut result left out, given a tool's inputs. */
 export function pagingHint(inputs: readonly string[]): string {
   if (inputs.includes('limit') && inputs.includes('offset')) {
@@ -333,6 +356,7 @@ export function buildTools(
       unrepresentable: 'any',
     }) as Record<string, unknown>;
     delete jsonSchema['$schema'];
+    datelessDefaults(jsonSchema);
     tools.push({
       name: toolName(name),
       description:

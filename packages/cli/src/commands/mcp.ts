@@ -9,7 +9,8 @@ import { pkg } from '../package';
 const INSTRUCTIONS = `Tools for a sevdesk accounting account (bookkeeping system 2.0), one per CLI command (vouchers_list = \`sevdesk vouchers:list\`). Results are the CLI's JSON output: every scalar is a string, ids included.
 
 - Prefer \`local: true\` on list/get tools: it answers from the local database without API requests. Run db_sync first when the database is missing or stale (db_info shows the last sync); db_history shows what syncs found changed.
-- List tools return all matching records unless \`limit\` is set; use filters and \`limit\` on large accounts.
+- List tools return all matching records unless \`limit\` is set. A result that would be too long is cut to the records that fit, with a note on how to page or filter for the rest; prefer filters and \`limit\` on large accounts.
+- db_history lists what changed (\`changes\`); fetch the current record with the matching get tool.
 - Write tools exist only when the server runs with --allow-writes. They create drafts and contacts only: vouchers_create always creates a draft (status 50). Booking, enshrining, sending and deleting are not available.`;
 
 export default defineCommand({
