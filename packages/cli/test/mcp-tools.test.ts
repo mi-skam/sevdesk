@@ -11,6 +11,7 @@ import {
   pagingHint,
   shapeOutput,
   toolKind,
+  toolWording,
   type Command,
 } from '../src/mcp/tools';
 
@@ -241,7 +242,7 @@ describe('command capture', () => {
     const result = await tool(all, 'fake_list').call({});
 
     expect(result).toEqual({
-      content: [{ type: 'text', text: 'You must pass --yes.' }],
+      content: [{ type: 'text', text: 'You must confirm.' }],
       isError: true,
     });
     expect(process.exit).toBe(exit);
@@ -314,6 +315,21 @@ describe('pagingHint', () => {
     );
     expect(pagingHint([])).toBe(
       'This tool cannot page; the result is incomplete.',
+    );
+  });
+});
+
+describe('toolWording', () => {
+  it('turns CLI hints into tool hints', () => {
+    expect(
+      toolWording(
+        'Voucher 1 is not in the local database. Run `sevdesk db:sync` or drop --local.',
+      ),
+    ).toBe(
+      'Voucher 1 is not in the local database. Call the db_sync tool or set local to false.',
+    );
+    expect(toolWording('No changes. Run `sevdesk db:info` first.')).toBe(
+      'No changes. Call the db_info tool first.',
     );
   });
 });

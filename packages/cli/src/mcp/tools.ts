@@ -239,6 +239,24 @@ function formatLog(args: unknown[]): string {
 }
 
 /**
+ * Rewrites the CLI's hints for a tool caller: "Run `sevdesk db:sync` or drop
+ * --local." becomes "Call the db_sync tool or set local to false."
+ */
+export function toolWording(message: string): string {
+  return message
+    .replace(
+      /\bRun `sevdesk ([a-z-]+:[a-z-]+)`/g,
+      (_, command: string) => `Call the ${toolName(command)} tool`,
+    )
+    .replace(
+      /`sevdesk ([a-z-]+:[a-z-]+)`/g,
+      (_, command: string) => `the ${toolName(command)} tool`,
+    )
+    .replace(/\bdrop --local\b/g, 'set local to false')
+    .replace(/\bpass --yes\b/g, 'confirm');
+}
+
+/**
  * Runs a command as the CLI would with `--json --yes`, capturing what it
  * prints. `console.log` output is the result; consola messages (warnings,
  * errors) come back as notes. `process.exit` ends the call, not the server.
@@ -299,7 +317,7 @@ export async function runCommand(
     }
   }
   if (notes.length > 0) {
-    content.push({ type: 'text', text: notes.join('\n') });
+    content.push({ type: 'text', text: toolWording(notes.join('\n')) });
   }
   if (content.length === 0) {
     content.push({ type: 'text', text: failed ? 'Failed.' : 'Done.' });
