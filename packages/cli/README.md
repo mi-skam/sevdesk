@@ -80,7 +80,7 @@ IDs must be positive safe integers. Commands with an existing interactive prompt
 
 ## Local database
 
-`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses and communication ways, invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, booking accounts, tags and parts. It only reads from sevdesk.
+`sevdesk db:sync` copies every record of the account into a local SQLite database: contacts with their addresses, communication ways and accounting contacts (debitor/creditor numbers), invoices, credit notes, orders and quotes, vouchers, all of their positions, check accounts, transactions, private transaction rules, booking accounts, tags and parts. It only reads from sevdesk.
 
 - **Location**: `SEVDESK_DB`, otherwise `$XDG_DATA_HOME/sevdesk/sevdesk.db`, otherwise `~/.local/share/sevdesk/sevdesk.db`. The file is created with mode `0600` and contains your accounting data, so keep it out of repositories and backups you share.
 - **Incremental**: contacts, invoices, orders and vouchers are the only entities the API can filter by change time. After the first run they are fetched from one hour before the newest change already stored; everything else is fetched in full on every run.
@@ -150,6 +150,11 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`doctor`](#doctor)
 - [`db:info`](#dbinfo)
 - [`db:sync`](#dbsync)
+- [`accounting-contacts:create`](#accounting-contactscreate)
+- [`accounting-contacts:delete`](#accounting-contactsdelete)
+- [`accounting-contacts:get`](#accounting-contactsget)
+- [`accounting-contacts:list`](#accounting-contactslist)
+- [`accounting-contacts:update`](#accounting-contactsupdate)
 - [`accounts-datev:get`](#accounts-datevget)
 - [`accounts-datev:list`](#accounts-datevlist)
 - [`accounts:balance`](#accountsbalance)
@@ -189,6 +194,9 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`orders:pdf`](#orderspdf)
 - [`parts:get`](#partsget)
 - [`parts:list`](#partslist)
+- [`private-transaction-rules:create`](#private-transaction-rulescreate)
+- [`private-transaction-rules:delete`](#private-transaction-rulesdelete)
+- [`private-transaction-rules:list`](#private-transaction-ruleslist)
 - [`quotes:create`](#quotescreate)
 - [`quotes:get`](#quotesget)
 - [`quotes:list`](#quoteslist)
@@ -268,6 +276,84 @@ sevdesk db:sync [options]
 
 - `--full`: Fetch every entity in full, which also detects deletions of incrementally synced ones. Defaults to `false`.
 - `--json`: Output in JSON format: the database path, per entity the mode and the number of fetched, inserted, updated, unchanged and deleted records, the skipped entities and the number of requests.
+
+### `accounting-contacts:create`
+
+Give a contact a debitor and/or creditor number.
+
+```bash
+sevdesk accounting-contacts:create [options]
+```
+
+**Options:**
+
+- `--contact`: ID of the contact. If omitted, you will be prompted.
+- `--debitor-number`: Debitor number for the contact.
+- `--creditor-number`: Creditor number for the contact.
+- `--json`: Output in JSON format.
+
+### `accounting-contacts:delete`
+
+Delete an accounting contact. sevdesk warns this can cause booking errors, especially in the DATEV export.
+
+```bash
+sevdesk accounting-contacts:delete [id] [options]
+```
+
+**Argument:** `id` — The accounting contact ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `accounting-contacts:get`
+
+Show a single accounting contact.
+
+```bash
+sevdesk accounting-contacts:get [id] [options]
+```
+
+**Argument:** `id` — The accounting contact ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `accounting-contacts:list`
+
+List accounting contacts: the debitor and creditor numbers of contacts. Accounting contacts that belong to a bare name rather than a contact (for example a voucher supplier entered without one) have no `contact` but a `contactName`; they come first, then the rest by contact ID.
+
+```bash
+sevdesk accounting-contacts:list [options]
+```
+
+**Options:**
+
+- `--contact`: Only the accounting contact of this contact ID.
+- `--limit`: Maximum number of accounting contacts to return. Defaults to all of them.
+- `--offset`: Number of accounting contacts to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `accounting-contacts:update`
+
+Change the debitor or creditor number of an accounting contact. sevdesk warns this can cause booking errors, especially in the DATEV export.
+
+```bash
+sevdesk accounting-contacts:update [id] [options]
+```
+
+**Argument:** `id` — The accounting contact ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--debitor-number`: New debitor number.
+- `--creditor-number`: New creditor number.
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
+- `--json`: Output in JSON format.
 
 ### `accounts-datev:get`
 
@@ -1058,6 +1144,50 @@ sevdesk parts:list [options]
 - `--part-number`: Filter by part number.
 - `--limit`: Maximum number of parts to return. Defaults to all of them.
 - `--offset`: Number of parts to skip.
+- `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `private-transaction-rules:create`
+
+Create a rule that marks matching bank transactions as private automatically.
+
+```bash
+sevdesk private-transaction-rules:create [options]
+```
+
+**Options:**
+
+- `--counterpart`: Counterpart name of the transactions to match.
+- `--purpose`: Payment purpose of the transactions to match.
+- `--json`: Output in JSON format.
+
+### `private-transaction-rules:delete`
+
+Delete a private transaction rule.
+
+```bash
+sevdesk private-transaction-rules:delete [id] [options]
+```
+
+**Argument:** `id` — The rule ID. If omitted, you will be prompted.
+
+**Options:**
+
+- `--yes`: Skip the confirmation prompt. Defaults to `false`.
+- `--json`: Output in JSON format.
+
+### `private-transaction-rules:list`
+
+List the rules that mark bank transactions as private.
+
+```bash
+sevdesk private-transaction-rules:list [options]
+```
+
+**Options:**
+
+- `--limit`: Maximum number of rules to return. Defaults to all of them.
+- `--offset`: Number of rules to skip.
 - `--local`: Read from the [local database](#local-database) instead of the API. Defaults to `false`.
 - `--json`: Output in JSON format.
 

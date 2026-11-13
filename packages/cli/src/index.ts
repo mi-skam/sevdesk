@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { consola } from 'consola';
 import { defineConfig, processConfig } from 'zodline';
+import accountingContactsCreate from './commands/accounting-contacts/create';
+import accountingContactsDelete from './commands/accounting-contacts/delete';
+import accountingContactsGet from './commands/accounting-contacts/get';
+import accountingContactsList from './commands/accounting-contacts/list';
+import accountingContactsUpdate from './commands/accounting-contacts/update';
 import accountsDatevGet from './commands/accounts-datev/get';
 import accountsDatevList from './commands/accounts-datev/list';
 import accountsBalance from './commands/accounts/balance';
@@ -45,6 +50,9 @@ import ordersList from './commands/orders/list';
 import ordersPdf from './commands/orders/pdf';
 import partsGet from './commands/parts/get';
 import partsList from './commands/parts/list';
+import privateTransactionRulesCreate from './commands/private-transaction-rules/create';
+import privateTransactionRulesDelete from './commands/private-transaction-rules/delete';
+import privateTransactionRulesList from './commands/private-transaction-rules/list';
 import quotesCreate from './commands/quotes/create';
 import quotesGet from './commands/quotes/get';
 import quotesList from './commands/quotes/list';
@@ -82,6 +90,11 @@ const config = defineConfig({
     doctor,
     'db:info': dbInfo,
     'db:sync': dbSync,
+    'accounting-contacts:create': accountingContactsCreate,
+    'accounting-contacts:delete': accountingContactsDelete,
+    'accounting-contacts:get': accountingContactsGet,
+    'accounting-contacts:list': accountingContactsList,
+    'accounting-contacts:update': accountingContactsUpdate,
     'accounts-datev:get': accountsDatevGet,
     'accounts-datev:list': accountsDatevList,
     'accounts:balance': accountsBalance,
@@ -121,6 +134,9 @@ const config = defineConfig({
     'orders:pdf': ordersPdf,
     'parts:get': partsGet,
     'parts:list': partsList,
+    'private-transaction-rules:create': privateTransactionRulesCreate,
+    'private-transaction-rules:delete': privateTransactionRulesDelete,
+    'private-transaction-rules:list': privateTransactionRulesList,
     'quotes:create': quotesCreate,
     'quotes:get': quotesGet,
     'quotes:list': quotesList,

@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import accountingContactsList from '../src/commands/accounting-contacts/list';
 import contactsGet from '../src/commands/contacts/get';
 import contactsList from '../src/commands/contacts/list';
 import invoicesList from '../src/commands/invoices/list';
@@ -280,5 +281,37 @@ describe('--local', () => {
     expect(output.contact.id).toBe('7');
     expect(ids(output.addresses)).toEqual(['1']);
     expect(ids(output.communicationWays)).toEqual(['3']);
+  });
+
+  it('orders accounting contacts by contact and filters by it', async () => {
+    const accountingContact = (id: string, contactId?: string) => ({
+      id,
+      objectName: 'AccountingContact',
+      ...(contactId
+        ? {
+            contact: { id: contactId, objectName: 'Contact' },
+            contactName: null,
+          }
+        : { contactName: 'ACME Coffee' }),
+      debitorNumber: null,
+      creditorNumber: `7000${id}`,
+    });
+    await seed({
+      'accounting-contacts': [
+        accountingContact('1', '9'),
+        accountingContact('2'),
+        accountingContact('3', '7'),
+        accountingContact('4'),
+      ],
+    });
+
+    await accountingContactsList.action({ local: true, json: true }, undefined);
+    expect(ids(printed())).toEqual(['2', '4', '3', '1']);
+
+    await accountingContactsList.action(
+      { local: true, json: true, contact: 7 },
+      undefined,
+    );
+    expect(ids(printed())).toEqual(['3']);
   });
 });

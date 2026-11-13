@@ -49,6 +49,11 @@ export const ENTITIES: readonly EntityDefinition[] = [
       }),
   },
   {
+    name: 'accounting-contacts',
+    incremental: false,
+    fetchPage: (client, page) => client.accountingContacts.list(page),
+  },
+  {
     name: 'contact-addresses',
     incremental: false,
     fetchPage: (client, page) => client.contactAddresses.list(page),
@@ -125,6 +130,11 @@ export const ENTITIES: readonly EntityDefinition[] = [
     name: 'transactions',
     incremental: false,
     fetchPage: (client, page) => client.transactions.list(page),
+  },
+  {
+    name: 'private-transaction-rules',
+    incremental: false,
+    fetchPage: (client, page) => client.privateTransactionRules.list(page),
   },
   {
     name: 'accounts-datev',

@@ -7,6 +7,7 @@ export type {
   QueryValue,
   SevDeskOptions,
 } from './http-client';
+export * from './resources/accounting-contacts';
 export * from './resources/accounts-datev';
 export * from './resources/basics';
 export * from './resources/check-accounts';
@@ -19,6 +20,7 @@ export * from './resources/exports';
 export * from './resources/invoices';
 export * from './resources/orders';
 export * from './resources/parts';
+export * from './resources/private-transaction-rules';
 export * from './resources/receipt-guidance';
 export * from './resources/reports';
 export * from './resources/tags';
