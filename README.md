@@ -166,7 +166,7 @@ Releases are GitHub releases only; nothing is published to npm. Both packages al
      gh pr merge <number> --merge
      ```
 
-   The release PR's own CI is not awaited in the labelled flow; the tag is built, tested and verified in step 4 before anything is published.
+   In the labelled flow the workflow waits for the release PR's CI to pass before merging it; if it fails, merge the release PR by hand once it is green.
 
 4. **The release is created (automatic, about 2–3 minutes).** The Release workflow tags `vX.Y.Z` and creates the GitHub release with the changelog as notes. It then calls `.github/workflows/github-release.yml`, which builds, lints, typechecks and tests the tag, packs the tarballs, verifies that they install and run, and attaches `sevdesk-sdk-X.Y.Z.tgz`, `sevdesk-cli-X.Y.Z.tgz` and `SHA256SUMS`.
 
