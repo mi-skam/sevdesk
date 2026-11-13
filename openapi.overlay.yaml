@@ -240,6 +240,10 @@ actions:
           { $ref: '#/components/parameters/limit' },
           { $ref: '#/components/parameters/offset' },
         ]
+  - target: $.paths['/CheckAccount/{checkAccountId}/getBalanceAtDate'].get
+    update:
+      x-sevdesk-notes:
+        - Answers "-0" for an account whose transactions cancel out (verified live).
   - target: $.paths['/TagRelation'].get
     update:
       parameters:
