@@ -63,6 +63,80 @@ const ARGUMENT_NAMES: Record<string, string[]> = {
   'vouchers:create': ['file'],
 };
 
+/**
+ * Fields left out of a tool's result: Base64 thumbnails, PDFs and template
+ * HTML, which make `layouts:templates` over 20 MB and mean nothing to a model.
+ */
+const OMITTED_FIELDS: Record<string, string[]> = {
+  'layouts:letterpapers': ['img', 'pdf'],
+  'layouts:templates': ['img', 'html'],
+};
+
+/**
+ * The largest result text a tool returns, about 20,000 tokens: Claude Code
+ * rejects results over 25,000 tokens by default. A longer list is cut to the
+ * records that fit, with a note on how to page.
+ */
+export const MAX_RESULT_LENGTH = 80_000;
+
+/**
+ * Compacts JSON output (the CLI indents it), drops `omit` fields from each
+ * record and cuts an array that is too long. Non-JSON output is cut as text.
+ */
+export function shapeOutput(
+  text: string,
+  omit: readonly string[] = [],
+  maxLength = MAX_RESULT_LENGTH,
+  hint = 'Narrow the query with filters.',
+): { text: string; note?: string } {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return text.length > maxLength
+      ? {
+          text: text.slice(0, maxLength),
+          note: `Output cut at ${maxLength} of ${text.length} characters.`,
+        }
+      : { text };
+  }
+  const strip = (record: unknown): unknown => {
+    if (omit.length === 0 || typeof record !== 'object' || record === null) {
+      return record;
+    }
+    const copy = { ...(record as Record<string, unknown>) };
+    for (const field of omit) {
+      delete copy[field];
+    }
+    return copy;
+  };
+  const shaped = Array.isArray(value) ? value.map(strip) : strip(value);
+  const compact = JSON.stringify(shaped);
+  if (compact.length <= maxLength || !Array.isArray(shaped)) {
+    return compact.length <= maxLength
+      ? { text: compact }
+      : {
+          text: compact.slice(0, maxLength),
+          note: `Output cut at ${maxLength} of ${compact.length} characters.`,
+        };
+  }
+  // Keep the longest prefix of records that fits.
+  let length = 2;
+  let count = 0;
+  for (const record of shaped) {
+    const size = JSON.stringify(record).length + (count > 0 ? 1 : 0);
+    if (length + size > maxLength) {
+      break;
+    }
+    length += size;
+    count += 1;
+  }
+  return {
+    text: JSON.stringify(shaped.slice(0, count)),
+    note: `Showing the first ${count} of ${shaped.length} records; the rest did not fit into one result. ${hint}`,
+  };
+}
+
 /** Commands whose positional arguments stay optional; for all others they are required. */
 const OPTIONAL_ARGUMENTS = new Set(['db:history']);
 
@@ -169,6 +243,7 @@ export async function runCommand(
   command: Command,
   options: Record<string, unknown>,
   args: unknown[],
+  shaping: { omit?: readonly string[]; hint?: string } = {},
 ): Promise<ToolResult> {
   const output: string[] = [];
   const notes: string[] = [];
@@ -208,7 +283,16 @@ export async function runCommand(
   }
   const content: ToolResult['content'] = [];
   if (output.length > 0) {
-    content.push({ type: 'text', text: output.join('\n') });
+    const shaped = shapeOutput(
+      output.join('\n'),
+      shaping.omit,
+      MAX_RESULT_LENGTH,
+      shaping.hint,
+    );
+    content.push({ type: 'text', text: shaped.text });
+    if (shaped.note) {
+      notes.push(shaped.note);
+    }
   }
   if (notes.length > 0) {
     content.push({ type: 'text', text: notes.join('\n') });
@@ -217,6 +301,19 @@ export async function runCommand(
     content.push({ type: 'text', text: failed ? 'Failed.' : 'Done.' });
   }
   return failed ? { content, isError: true } : { content };
+}
+
+/** How to reach the records a cut result left out, given a tool's inputs. */
+export function pagingHint(inputs: readonly string[]): string {
+  if (inputs.includes('limit') && inputs.includes('offset')) {
+    return 'Page with limit and offset, or narrow the query with filters.';
+  }
+  const filters = inputs.filter(
+    (input) => !['limit', 'local', 'id'].includes(input),
+  );
+  return filters.length > 0
+    ? `Narrow the query with ${filters.join(', ')}.`
+    : 'This tool cannot page; the result is incomplete.';
 }
 
 export function buildTools(
@@ -280,7 +377,10 @@ export function buildTools(
                 : {}),
             })
           : {};
-        return runCommand(command, commandOptions, args);
+        return runCommand(command, commandOptions, args, {
+          omit: OMITTED_FIELDS[name],
+          hint: pagingHint(Object.keys(schema.shape)),
+        });
       },
     });
   }

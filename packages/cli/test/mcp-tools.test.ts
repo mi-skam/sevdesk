@@ -6,7 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { defineCommand, defineOptions } from 'zodline';
 import { commands } from '../src/commands';
-import { buildTools, toolKind, type Command } from '../src/mcp/tools';
+import {
+  buildTools,
+  pagingHint,
+  shapeOutput,
+  toolKind,
+  type Command,
+} from '../src/mcp/tools';
 
 const fetchMock = vi.fn();
 
@@ -238,5 +244,53 @@ describe('command capture', () => {
     const result = await tool(all, 'fake_list').call({});
     expect(result.isError).toBe(true);
     expect(process.exitCode).toBeUndefined();
+  });
+});
+
+describe('shapeOutput', () => {
+  it('compacts JSON and drops omitted fields', () => {
+    const text = JSON.stringify(
+      [{ id: '1', img: 'AAAA', name: 'ACME' }],
+      null,
+      2,
+    );
+    expect(shapeOutput(text, ['img'])).toEqual({
+      text: '[{"id":"1","name":"ACME"}]',
+    });
+  });
+
+  it('cuts a long list to the records that fit, with a hint', () => {
+    const records = Array.from({ length: 10 }, (_, i) => ({ id: String(i) }));
+    const shaped = shapeOutput(JSON.stringify(records), [], 50, 'Page.');
+    const kept = JSON.parse(shaped.text) as unknown[];
+    expect(shaped.text.length).toBeLessThanOrEqual(50);
+    expect(kept).toEqual(records.slice(0, kept.length));
+    expect(shaped.note).toBe(
+      `Showing the first ${kept.length} of 10 records; the rest did not fit into one result. Page.`,
+    );
+  });
+
+  it('cuts text and objects that are too long', () => {
+    expect(shapeOutput('x'.repeat(20), [], 10)).toEqual({
+      text: 'x'.repeat(10),
+      note: 'Output cut at 10 of 20 characters.',
+    });
+    expect(
+      shapeOutput(JSON.stringify({ a: 'y'.repeat(20) }), [], 10).note,
+    ).toBe('Output cut at 10 of 28 characters.');
+  });
+});
+
+describe('pagingHint', () => {
+  it('names the way to reach the rest', () => {
+    expect(pagingHint(['status', 'limit', 'offset', 'local'])).toBe(
+      'Page with limit and offset, or narrow the query with filters.',
+    );
+    expect(pagingHint(['accountNumber', 'taxRule'])).toBe(
+      'Narrow the query with accountNumber, taxRule.',
+    );
+    expect(pagingHint([])).toBe(
+      'This tool cannot page; the result is incomplete.',
+    );
   });
 });
