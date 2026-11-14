@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/mi-skam/sevdesk/compare/v0.4.6...v0.4.7) (2026-11-14)
+
+
+### Bug Fixes
+
+* **mcp:** offer invoices_cancel and invoices_send with --allow-writes ([#43](https://github.com/mi-skam/sevdesk/issues/43)) ([ac8ce49](https://github.com/mi-skam/sevdesk/commit/ac8ce4979f2b85ce6635f7936e4d015faa38ecb0))
+
 ## [0.4.6](https://github.com/mi-skam/sevdesk/compare/v0.4.5...v0.4.6) (2026-11-14)
 
 
