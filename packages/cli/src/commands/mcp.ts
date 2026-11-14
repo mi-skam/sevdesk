@@ -11,8 +11,8 @@ const INSTRUCTIONS = `Tools for a sevdesk accounting account (bookkeeping system
 - Prefer \`local: true\` on list/get tools: it answers from the local database without API requests. Run db_sync first when the database is missing or stale (db_info shows the last sync); db_history shows what syncs found changed.
 - List tools return all matching records unless \`limit\` is set. A result that would be too long is cut to the records that fit, with a note on how to page or filter for the rest; prefer filters and \`limit\` on large accounts.
 - db_history lists what changed (\`changes\`); fetch the current record with the matching get tool.
-- Write tools exist only when the server runs with --allow-writes. They create drafts and contacts only: vouchers_create always creates a draft (status 50). Booking, enshrining and deleting are not available.
-- invoices_cancel and invoices_send exist only when the server runs with --allow-final-writes. invoices_cancel creates a cancellation invoice (Stornorechnung) and closes an open, unpaid invoice; invoices_send emails and finalises a draft, or emails an unsent cancellation invoice, from a delivery JSON file ({ "delivery": { "to", "subject", "message", "cc"?, "bcc"?, "copyToSelf"? } }, \`{{number}}\` becomes the invoice number). Both cannot be undone: get the user's approval of the invoice, the recipient and the text before calling them.`;
+- Write tools exist only when the server runs with --allow-writes. Most create drafts and contacts only: vouchers_create always creates a draft (status 50). Booking, enshrining and deleting are not available.
+- invoices_cancel and invoices_send are the exception and cannot be undone. invoices_cancel creates a cancellation invoice (Stornorechnung) and closes an open, unpaid invoice; invoices_send emails and finalises a draft, or emails an unsent cancellation invoice, from a delivery JSON file ({ "delivery": { "to", "subject", "message", "cc"?, "bcc"?, "copyToSelf"? } }, \`{{number}}\` becomes the invoice number). Both cannot be undone: get the user's approval of the invoice, the recipient and the text before calling them.`;
 
 export default defineCommand({
   description:
@@ -23,13 +23,7 @@ export default defineCommand({
         .boolean()
         .default(false)
         .describe(
-          'Also offer tools that create drafts: draft vouchers and invoices, contacts with their addresses, e-mails and phone numbers, and tags. Never booking, sending or deleting.',
-        ),
-      allowFinalWrites: z
-        .boolean()
-        .default(false)
-        .describe(
-          'Also offer invoices_cancel and invoices_send, which cancel an invoice and email invoices to customers. Neither can be undone.',
+          'Also offer write tools: draft vouchers and invoices, contacts with their addresses, e-mails and phone numbers, and tags, plus invoices_cancel and invoices_send, which cancel an invoice and email invoices to customers and cannot be undone. Never booking or deleting.',
         ),
     }),
   ),
@@ -39,16 +33,13 @@ export default defineCommand({
       console.error(...values);
     };
     consola.options.stdout = process.stderr;
-    const tools = buildTools(commands, {
-      allowWrites: options.allowWrites,
-      allowFinalWrites: options.allowFinalWrites,
-    });
+    const tools = buildTools(commands, { allowWrites: options.allowWrites });
     const server = new McpServer(
       { name: 'sevdesk', version: pkg.version, instructions: INSTRUCTIONS },
       tools,
     );
     consola.info(
-      `sevdesk MCP server ${pkg.version}: ${tools.length} tools${options.allowWrites ? ', draft writes allowed' : ''}${options.allowFinalWrites ? ', cancelling and sending invoices allowed' : ''}${options.allowWrites || options.allowFinalWrites ? '' : ', read-only'}.`,
+      `sevdesk MCP server ${pkg.version}: ${tools.length} tools${options.allowWrites ? ', writes allowed' : ', read-only'}.`,
     );
     await server.serveStdio();
   },
