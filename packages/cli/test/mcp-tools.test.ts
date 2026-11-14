@@ -77,6 +77,40 @@ describe('MCP tools from the CLI commands', () => {
     }
   });
 
+  it('offers cancelling and sending invoices only with allowFinalWrites', () => {
+    const titles = (allowFinalWrites: boolean) =>
+      buildTools(commands, { allowWrites: true, allowFinalWrites }).map(
+        (t) => t.annotations?.title ?? '',
+      );
+    expect(titles(false)).not.toContain('invoices:cancel');
+    expect(titles(false)).not.toContain('invoices:send');
+    expect(
+      buildTools(commands, { allowWrites: false, allowFinalWrites: true })
+        .map((t) => t.annotations?.title)
+        .filter((name) => toolKind(name!) !== 'read'),
+    ).toEqual(expect.arrayContaining(['invoices:cancel', 'invoices:send']));
+    const extra = titles(true).filter((name) => !titles(false).includes(name));
+    expect(extra.sort()).toEqual(['invoices:cancel', 'invoices:send']);
+
+    const all = buildTools(commands, {
+      allowWrites: false,
+      allowFinalWrites: true,
+    });
+    const send = all.find((t) => t.name === 'invoices_send')!;
+    expect(send.annotations?.destructiveHint).toBe(true);
+    expect(send.inputSchema['required']).toEqual(['id', 'file']);
+    expect(Object.keys(send.inputSchema['properties'] as object)).toEqual([
+      'id',
+      'file',
+      'dryRun',
+    ]);
+    const cancel = all.find((t) => t.name === 'invoices_cancel')!;
+    expect(cancel.annotations?.destructiveHint).toBe(true);
+    expect(Object.keys(cancel.inputSchema['properties'] as object)).toEqual([
+      'id',
+    ]);
+  });
+
   it('names tools without colons and marks reads read-only', () => {
     for (const t of buildTools(commands, { allowWrites: true })) {
       expect(t.name).toMatch(/^[a-zA-Z0-9_-]{1,64}$/);

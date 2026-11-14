@@ -191,6 +191,68 @@ describe('invoice draft workflows', () => {
       expect(writes()).toHaveLength(0);
     },
   );
+  const cancellation = {
+    ...sent,
+    id: '9003',
+    invoiceNumber: 'RE-3',
+    invoiceType: 'SR',
+    status: '1000',
+    sendType: 'VPDF',
+    sendDate: null,
+    enshrined: '2030-01-10T09:00:00+01:00',
+    sumGross: '-1190',
+  };
+  it('emails an unmailed cancellation invoice, acknowledged by send type VM without a send date', async () => {
+    fetchMock
+      .mockResolvedValueOnce(response([cancellation]))
+      .mockResolvedValueOnce(
+        response({
+          id: '5002',
+          objectName: 'Email',
+          object: { ...cancellation, sendType: 'VM' },
+        }),
+      );
+    await run(
+      'invoices:send',
+      '9003',
+      deliveryFile,
+      '--yes',
+      '--json',
+      '--receipt',
+      receipt,
+    );
+    expect(writes()).toHaveLength(1);
+    expect(String(writes()[0]?.[0])).toContain('/Invoice/9003/sendViaEmail');
+    expect(requestBody().subject).toBe('Rechnung Nr. RE-3');
+    expect(output()).toMatchObject({
+      state: 'sent',
+      invoiceNumber: 'RE-3',
+      status: '1000',
+      sendType: 'VM',
+    });
+    expect(process.exitCode).toBeFalsy();
+  });
+  it.each([
+    { ...cancellation, sendType: 'VM' },
+    { ...cancellation, sendDate: sent.sendDate },
+  ])('never resends a mailed cancellation invoice: %j', async (invoice) => {
+    fetchMock.mockResolvedValueOnce(response([invoice]));
+    await expect(
+      run('invoices:send', invoice.id, deliveryFile, '--yes'),
+    ).rejects.toThrow(/already sent/);
+    expect(writes()).toHaveLength(0);
+  });
+  it('asks to email, not finalise, a cancellation invoice', async () => {
+    vi.mocked(isInteractive).mockReturnValue(true);
+    vi.mocked(promptConfirm).mockResolvedValue(false);
+    fetchMock.mockResolvedValueOnce(response([cancellation]));
+    await run('invoices:send', '9003', deliveryFile);
+    expect(promptConfirm).toHaveBeenCalledWith(
+      expect.stringMatching(/^Email cancellation invoice RE-3.*-1190 EUR/),
+      false,
+    );
+    expect(writes()).toHaveLength(0);
+  });
   it.each(['invoices:send', 'invoices:update'])(
     '%s dry-run is offline, even without authentication',
     async (cmd) => {

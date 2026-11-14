@@ -46,6 +46,7 @@ import exportInvoices from './commands/export/invoices';
 import exportTransactions from './commands/export/transactions';
 import exportVouchers from './commands/export/vouchers';
 import guidanceAccounts from './commands/guidance/accounts';
+import invoicesCancel from './commands/invoices/cancel';
 import invoicesCreate from './commands/invoices/create';
 import invoicesDelete from './commands/invoices/delete';
 import invoicesGet from './commands/invoices/get';
@@ -145,6 +146,7 @@ export const commands = {
   'export:transactions': exportTransactions,
   'export:vouchers': exportVouchers,
   'guidance:accounts': guidanceAccounts,
+  'invoices:cancel': invoicesCancel,
   'invoices:create': invoicesCreate,
   'invoices:delete': invoicesDelete,
   'invoices:send': invoicesSend,

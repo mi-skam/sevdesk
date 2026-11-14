@@ -39,7 +39,8 @@ const LOCAL_WRITES = new Set(['db:sync']);
  * Commands that only create new records in a state that changes nothing
  * booked: draft vouchers and invoices, contacts and their details, tags.
  * Offered only with `--allow-writes`. Everything that books, enshrines,
- * sends, deletes, edits existing records or writes files stays CLI-only.
+ * deletes, edits existing records or writes files stays CLI-only; cancelling
+ * and sending invoices are {@link FINAL_WRITES}.
  */
 const DRAFT_WRITES = new Set([
   'contacts:add-address',
@@ -51,6 +52,13 @@ const DRAFT_WRITES = new Set([
   'vouchers:create',
 ]);
 
+/**
+ * Commands that change the books for good or reach the customer: cancelling
+ * an invoice and emailing one. Offered only with `--allow-final-writes`, on
+ * top of the drafts; the MCP client's confirmation stands in for `--yes`.
+ */
+const FINAL_WRITES = new Set(['invoices:cancel', 'invoices:send']);
+
 /** Options whose value the server fixes for a tool instead of the caller. */
 const FIXED: Record<string, Record<string, unknown>> = {
   // A voucher created through MCP stays an editable draft.
@@ -61,6 +69,7 @@ const FIXED: Record<string, Record<string, unknown>> = {
 const ARGUMENT_NAMES: Record<string, string[]> = {
   'db:history': ['entity', 'id'],
   'invoices:create': ['file'],
+  'invoices:send': ['id', 'file'],
   'vouchers:create': ['file'],
 };
 
@@ -246,7 +255,13 @@ const OPTIONAL_ARGUMENTS = new Set(['db:history']);
 /** Options every tool sets itself: output is always JSON, and confirmed by the MCP client. */
 const HIDDEN_OPTIONS = new Set(['json', 'yes']);
 
-export type ToolKind = 'read' | 'local-write' | 'draft-write';
+/** Options of single commands a tool leaves at their default. */
+const HIDDEN_COMMAND_OPTIONS: Record<string, string[]> = {
+  // The send receipt goes to its default private path, never one a caller picks.
+  'invoices:send': ['receipt'],
+};
+
+export type ToolKind = 'read' | 'local-write' | 'draft-write' | 'final-write';
 
 export function toolKind(name: string): ToolKind | undefined {
   if (name.endsWith(':list') || name.endsWith(':get') || READS.has(name)) {
@@ -254,6 +269,9 @@ export function toolKind(name: string): ToolKind | undefined {
   }
   if (LOCAL_WRITES.has(name)) {
     return 'local-write';
+  }
+  if (FINAL_WRITES.has(name)) {
+    return 'final-write';
   }
   return DRAFT_WRITES.has(name) ? 'draft-write' : undefined;
 }
@@ -274,6 +292,12 @@ const ANNOTATIONS: Record<ToolKind, ToolAnnotations> = {
   'draft-write': {
     readOnlyHint: false,
     destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+  'final-write': {
+    readOnlyHint: false,
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: true,
   },
@@ -317,7 +341,11 @@ function inputSchema(name: string, command: Command): z.ZodObject {
   });
   const options = (command.options?.schema as z.ZodObject | undefined)?.shape;
   for (const [key, option] of Object.entries(options ?? {})) {
-    if (HIDDEN_OPTIONS.has(key) || key in (FIXED[name] ?? {})) {
+    if (
+      HIDDEN_OPTIONS.has(key) ||
+      HIDDEN_COMMAND_OPTIONS[name]?.includes(key) ||
+      key in (FIXED[name] ?? {})
+    ) {
       continue;
     }
     shape[key] = option as z.ZodType;
@@ -458,12 +486,16 @@ export function pagingHint(inputs: readonly string[]): string {
 
 export function buildTools(
   commands: Record<string, Command>,
-  options: { allowWrites: boolean },
+  options: { allowWrites: boolean; allowFinalWrites?: boolean },
 ): Tool[] {
   const tools: Tool[] = [];
   for (const [name, command] of Object.entries(commands)) {
     const kind = toolKind(name);
-    if (!kind || (kind === 'draft-write' && !options.allowWrites)) {
+    if (
+      !kind ||
+      (kind === 'draft-write' && !options.allowWrites) ||
+      (kind === 'final-write' && !options.allowFinalWrites)
+    ) {
       continue;
     }
     const schema = inputSchema(name, command);
