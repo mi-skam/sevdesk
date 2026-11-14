@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/mi-skam/sevdesk/compare/v0.4.5...v0.4.6) (2026-11-14)
+
+
+### Features
+
+* add invoices:cancel and send cancellation invoices, both over MCP ([#41](https://github.com/mi-skam/sevdesk/issues/41)) ([203d82f](https://github.com/mi-skam/sevdesk/commit/203d82f29b5400c391e0a531033418c0896839b8))
+
 ## [0.4.5](https://github.com/mi-skam/sevdesk/compare/v0.4.4...v0.4.5) (2026-11-13)
 
 
