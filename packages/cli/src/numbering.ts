@@ -91,6 +91,30 @@ export async function nextNumber(
   return suggestNumber(kind, sequence, numbers);
 }
 
+/**
+ * The number sevdesk itself gives the next invoice it numbers, such as the
+ * cancellation invoice from `cancelInvoice`: the configured counter
+ * (Nummernkreis), whatever numbers exist. Verified live: a cancellation took
+ * `RE-<counter>` although a draft created with an explicit number already
+ * used it. Throws for formats `suggestNumber` cannot read.
+ */
+export async function counterNumber(client: SevDesk): Promise<string> {
+  const sequence = await client.basics.getNumberSequence({
+    objectType: 'Invoice',
+    type: 'RE',
+  });
+  return suggestNumber('invoice', sequence, []).nextNumber;
+}
+
+/** Invoices of any status and type that carry `number`. */
+export async function invoicesNumbered(client: SevDesk, number: string) {
+  return (
+    await fetchAll((page) =>
+      client.invoices.list({ invoiceNumber: number, ...page, showAll: true }),
+    )
+  ).filter((invoice) => invoice.invoiceNumber === number);
+}
+
 /** Best-effort duplicate guard, not an atomic reservation. Never retries a write. */
 export async function assertNumberAvailable(
   client: SevDesk,

@@ -401,6 +401,22 @@ actions:
         - { $ref: '#/components/parameters/createBefore' }
         - { $ref: '#/components/parameters/updateAfter' }
         - { $ref: '#/components/parameters/updateBefore' }
+  - target: $.paths['/Invoice/{invoiceId}/cancelInvoice'].post
+    update:
+      x-sevdesk-cancellation: >-
+        Returns the cancellation invoice: `invoiceType` `SR`, status `1000`,
+        enshrined, `origin` pointing to the original, `sendDate` empty and
+        `sendType` copied from the original. The original is set to status
+        `1000`. The cancellation is numbered from the invoice counter
+        (`SevSequence` type `RE`) even when that number is already used by a
+        draft saved with an explicit `invoiceNumber`, because explicit numbers
+        do not advance the counter.
+  - target: $.paths['/Invoice/{invoiceId}/sendViaEmail'].post
+    update:
+      x-sevdesk-cancellation-invoices: >-
+        Also mails a cancellation invoice (`SR`). Its `sendType` becomes `VM`,
+        but `sendDate` stays empty and status stays `1000`. With `copy` set,
+        the returned `Email` is the copy to the sender ("Kopie von …").
   - target: $.paths['/Invoice'].get.parameters[?(@.name == 'startDate')]
     update:
       description: >-

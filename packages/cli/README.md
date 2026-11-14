@@ -114,11 +114,13 @@ sevdesk vouchers:list --local --status 100   # answered from the database
 ```bash
 claude mcp add sevdesk -- sevdesk mcp                  # read-only
 claude mcp add sevdesk -- sevdesk mcp --allow-writes   # plus draft-only writes
+claude mcp add sevdesk -- sevdesk mcp --allow-writes --allow-final-writes   # plus cancelling and sending invoices
 ```
 
 - **Read-only by default**: every `list` and `get` command, `accounts:balance`, `guidance:accounts`, `invoices:overdue`, `numbering:get`, `doctor`, the layout and placeholder lists, and `db:info`, `db:history` and `db:sync` (which writes only the local database).
 - **`--allow-writes`** adds tools that create without changing anything booked: `vouchers:create` (always as a draft, status 50), `invoices:create` (a draft, never sent), `contacts:create` and `contacts:add-address`/`add-email`/`add-phone`, and `tags:create`. Your MCP client asks before each call.
-- **Never offered**: booking, enshrining, resetting, sending, deleting, updating existing records, layouts, PDFs, exports and anything else that writes files, `login`/`logout`.
+- **`--allow-final-writes`** adds `invoices:cancel` and `invoices:send`, which cannot be undone: cancelling creates a cancellation invoice, sending emails the customer. They are marked destructive, and `invoices:send` takes the delivery JSON as a file path and always writes its receipt to the default location. The flag works with or without `--allow-writes`.
+- **Never offered**: booking, enshrining, resetting, deleting, updating existing records, sending quotes, layouts, PDFs, exports and anything else that writes files, `login`/`logout`.
 - Results are compact JSON without the Base64 thumbnails and PDFs of templates and letterpapers, HTML fields (such as the head and foot texts of invoices) come back as plain text, `null` fields and `sevClient` are left out, and a contact embedded in another record keeps only its id, name and customer number. A list longer than about 20,000 tokens is cut to the records that fit, with a note on how to page or filter for the rest.
 - Confirmation prompts of the CLI are answered by the client's tool approval, so writes run with `--yes`. A missing argument is an error, never a prompt.
 
@@ -215,6 +217,7 @@ Small businesses (Kleinunternehmer) use 11 for revenue and 10 or 13 for expenses
 - [`export:transactions`](#exporttransactions)
 - [`export:vouchers`](#exportvouchers)
 - [`guidance:accounts`](#guidanceaccounts)
+- [`invoices:cancel`](#invoicescancel)
 - [`invoices:create`](#invoicescreate)
 - [`invoices:delete`](#invoicesdelete)
 - [`invoices:send`](#invoicessend)
@@ -283,6 +286,7 @@ sevdesk mcp [options]
 **Options:**
 
 - `--allow-writes`: Also offer tools that create drafts: draft vouchers and invoices, contacts with their addresses, e-mails and phone numbers, and tags. Never booking, sending or deleting. Defaults to `false`.
+- `--allow-final-writes`: Also offer `invoices_cancel` and `invoices_send`, which cancel an invoice and email invoices to customers. Neither can be undone. Defaults to `false`.
 
 ### `logout`
 
@@ -1062,6 +1066,33 @@ sevdesk guidance:accounts [options]
 - `--expense`: Only show accounts that can be used for expenses. Defaults to `false`.
 - `--json`: Output in JSON format.
 
+### `invoices:cancel`
+
+Cancel an open, unpaid invoice (status `200`, type `RE`). sevdesk creates a
+cancellation invoice (Stornorechnung, type `SR`) for the negative amount, finalised
+and enshrined, and sets the original to status `1000`. Cannot be undone. The
+cancellation invoice is **not** sent; email it with [`invoices:send`](#invoicessend).
+Drafts are refused (delete them with `invoices:delete`), as are partially paid,
+paid and already cancelled invoices (use the sevdesk web app).
+
+sevdesk numbers the cancellation invoice from its own counter (Nummernkreis), even
+when that number is already used, for example by a draft that `invoices:create`
+numbered explicitly. The command therefore reads the counter first and refuses when
+its number exists; renumber that draft or raise the counter in sevdesk, then cancel
+again. After cancelling it warns if the number still turned out to be a duplicate.
+If the numbering format cannot be read, it warns and cancels without the check.
+
+```bash
+sevdesk invoices:cancel 9002 --yes --json
+```
+
+**Argument:** required invoice ID.
+
+**Options:**
+
+- `--yes`: Confirm cancelling. Otherwise prompts with number, contact, gross amount and the expected cancellation number; non-interactive mode requires `--yes`.
+- `--json`: Return `{ cancelled: { invoiceId, invoiceNumber }, cancellation }`, where `cancellation` is the created cancellation invoice.
+
 ### `invoices:create`
 
 Create a regular **draft** invoice from a JSON file, including multiple positions.
@@ -1155,6 +1186,12 @@ sevdesk invoices:delete 9001 --yes --json
 
 Email and finalise an existing draft, without creating another invoice. Requires
 status `100`, an empty `sendDate`, and no enshrinement. Never automatically resends.
+
+Also emails a cancellation invoice (type `SR`) from `invoices:cancel`, which is
+already finalised. sevdesk marks a mailed cancellation invoice only by `sendType`
+`VM` and leaves its `sendDate` empty, so one with `sendType` `VM` or a `sendDate`
+is refused as already sent, and the send is acknowledged by `sendType` `VM` with
+status `1000`.
 
 ```bash
 sevdesk invoices:send 9001 delivery.json --dry-run --json

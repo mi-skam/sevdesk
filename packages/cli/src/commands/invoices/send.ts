@@ -6,12 +6,13 @@ import { idArgument } from '../../arguments';
 import { requireClient } from '../../client';
 import { deliverySchema, emailBody } from '../../delivery';
 import { reserveSendReceipt } from '../../invoices/receipt';
-import { invoiceSummary, requireDraft } from '../../invoices/workflow';
+import { invoiceSummary, requireSendable } from '../../invoices/workflow';
 import { confirmOrAbort } from '../../options';
 import { printJson } from '../../output';
 
 export default defineCommand({
-  description: 'Email and finalise an unsent invoice draft. Never resends.',
+  description:
+    'Email and finalise an unsent invoice draft, or email a cancellation invoice (Stornorechnung) that has not been mailed yet. Never resends.',
   args: z.tuple([
     idArgument.describe('Invoice ID.'),
     z.string().min(1).describe('delivery.json'),
@@ -53,10 +54,11 @@ export default defineCommand({
       invoiceId,
       embed: ['contact'],
     });
-    requireDraft(invoice, true);
+    requireSendable(invoice);
+    const cancellation = invoice.invoiceType === 'SR';
     if (
       !(await confirmOrAbort({
-        message: `Email and finalise draft ${invoiceSummary(invoice)} to ${delivery.to}${delivery.cc?.length ? `; cc ${delivery.cc.join(', ')}` : ''}${delivery.bcc?.length ? `; bcc ${delivery.bcc.join(', ')}` : ''}?`,
+        message: `${cancellation ? 'Email cancellation invoice' : 'Email and finalise draft'} ${invoiceSummary(invoice)} to ${delivery.to}${delivery.cc?.length ? `; cc ${delivery.cc.join(', ')}` : ''}${delivery.bcc?.length ? `; bcc ${delivery.bcc.join(', ')}` : ''}?`,
         yes: options.yes,
         initial: false,
       }))
@@ -79,11 +81,14 @@ export default defineCommand({
         ...emailBody(delivery, invoice.invoiceNumber ?? invoice.id),
       });
       const sent = email?.object;
+      // A cancellation invoice stays at status 1000 without a send date.
+      const acknowledged = cancellation
+        ? sent?.status === '1000'
+        : sent?.status === '200' && Boolean(sent.sendDate);
       if (
         email?.objectName !== 'Email' ||
         sent?.id !== invoice.id ||
-        sent.status !== '200' ||
-        !sent.sendDate ||
+        !acknowledged ||
         sent.sendType !== 'VM'
       )
         throw new Error('Missing send acknowledgement.');
@@ -111,7 +116,7 @@ export default defineCommand({
         sendType: stored?.sendType ?? current.sendType,
         sendDate: stored?.sendDate ?? current.sendDate,
         message:
-          'Sending failed or its outcome is unknown. No automatic retry was made. Inspect sevdesk and the receipt before retrying; never resend an invoice with a send date.',
+          'Sending failed or its outcome is unknown. No automatic retry was made. Inspect sevdesk and the receipt before retrying; never resend an invoice with a send date, or a cancellation invoice with send type VM.',
       };
       process.exitCode = 1;
     }
