@@ -38,9 +38,9 @@ const LOCAL_WRITES = new Set(['db:sync']);
 /**
  * Commands that only create new records in a state that changes nothing
  * booked: draft vouchers and invoices, contacts and their details, tags.
- * Offered only with `--allow-writes`. Everything that books, enshrines,
- * deletes, edits existing records or writes files stays CLI-only; cancelling
- * and sending invoices are {@link FINAL_WRITES}.
+ * Offered only with `--allow-writes`, like {@link FINAL_WRITES}. Everything
+ * that books, enshrines, deletes, edits existing records or writes files
+ * stays CLI-only.
  */
 const DRAFT_WRITES = new Set([
   'contacts:add-address',
@@ -54,8 +54,8 @@ const DRAFT_WRITES = new Set([
 
 /**
  * Commands that change the books for good or reach the customer: cancelling
- * an invoice and emailing one. Offered only with `--allow-final-writes`, on
- * top of the drafts; the MCP client's confirmation stands in for `--yes`.
+ * an invoice and emailing one. Offered with `--allow-writes` and marked
+ * destructive; the MCP client's confirmation stands in for `--yes`.
  */
 const FINAL_WRITES = new Set(['invoices:cancel', 'invoices:send']);
 
@@ -486,15 +486,15 @@ export function pagingHint(inputs: readonly string[]): string {
 
 export function buildTools(
   commands: Record<string, Command>,
-  options: { allowWrites: boolean; allowFinalWrites?: boolean },
+  options: { allowWrites: boolean },
 ): Tool[] {
   const tools: Tool[] = [];
   for (const [name, command] of Object.entries(commands)) {
     const kind = toolKind(name);
     if (
       !kind ||
-      (kind === 'draft-write' && !options.allowWrites) ||
-      (kind === 'final-write' && !options.allowFinalWrites)
+      ((kind === 'draft-write' || kind === 'final-write') &&
+        !options.allowWrites)
     ) {
       continue;
     }

@@ -62,13 +62,13 @@ describe('MCP tools from the CLI commands', () => {
     }
   });
 
-  it('never offers booking, sending, deleting or file output', () => {
+  it('never offers booking, deleting, other sending or file output', () => {
     const names = buildTools(commands, { allowWrites: true }).map(
       (t) => t.annotations?.title ?? '',
     );
     expect(names).toContain('vouchers:create');
     expect(names).toContain('contacts:create');
-    for (const name of names) {
+    for (const name of names.filter((n) => toolKind(n) !== 'final-write')) {
       const [group, action = ''] = name.split(':');
       expect(group).not.toMatch(/^(export|login|logout|mcp)$/);
       expect(action).not.toMatch(
@@ -77,25 +77,15 @@ describe('MCP tools from the CLI commands', () => {
     }
   });
 
-  it('offers cancelling and sending invoices only with allowFinalWrites', () => {
-    const titles = (allowFinalWrites: boolean) =>
-      buildTools(commands, { allowWrites: true, allowFinalWrites }).map(
-        (t) => t.annotations?.title ?? '',
-      );
-    expect(titles(false)).not.toContain('invoices:cancel');
-    expect(titles(false)).not.toContain('invoices:send');
-    expect(
-      buildTools(commands, { allowWrites: false, allowFinalWrites: true })
-        .map((t) => t.annotations?.title)
-        .filter((name) => toolKind(name!) !== 'read'),
-    ).toEqual(expect.arrayContaining(['invoices:cancel', 'invoices:send']));
-    const extra = titles(true).filter((name) => !titles(false).includes(name));
-    expect(extra.sort()).toEqual(['invoices:cancel', 'invoices:send']);
+  it('offers cancelling and sending invoices with allowWrites, marked destructive', () => {
+    const final = (allowWrites: boolean) =>
+      buildTools(commands, { allowWrites })
+        .map((t) => t.annotations?.title ?? '')
+        .filter((name) => toolKind(name) === 'final-write');
+    expect(final(false)).toEqual([]);
+    expect(final(true).sort()).toEqual(['invoices:cancel', 'invoices:send']);
 
-    const all = buildTools(commands, {
-      allowWrites: false,
-      allowFinalWrites: true,
-    });
+    const all = buildTools(commands, { allowWrites: true });
     const send = all.find((t) => t.name === 'invoices_send')!;
     expect(send.annotations?.destructiveHint).toBe(true);
     expect(send.inputSchema['required']).toEqual(['id', 'file']);
