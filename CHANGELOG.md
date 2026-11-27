@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/mi-skam/sevdesk/compare/v0.4.7...v0.4.8) (2026-11-27)
+
+
+### Bug Fixes
+
+* **deps:** update zodline to 0.4.0 ([#45](https://github.com/mi-skam/sevdesk/issues/45)) ([5598b2b](https://github.com/mi-skam/sevdesk/commit/5598b2bbd64fd19f23bac42868a603551d6eb131))
+
 ## [0.4.7](https://github.com/mi-skam/sevdesk/compare/v0.4.6...v0.4.7) (2026-11-14)
 
 
